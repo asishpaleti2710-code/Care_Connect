@@ -88,11 +88,14 @@ function ExpandedMapModal({ center, zoom, origin, destination, markers, selectab
       }
     });
 
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 150);
+    // Trigger map invalidation at progressive intervals to guarantee alignment as the modal transitions
+    const timeouts = [50, 150, 300, 600, 1200];
+    const timerIds = timeouts.map(ms => setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, ms));
 
     return () => {
+      timerIds.forEach(id => clearTimeout(id));
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -443,6 +446,10 @@ export default function RealisticMap({
       markersGroupRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
 
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
+
       // Handle map clicks in selectable mode
       map.on('click', async (e) => {
         if (selectable && onLocationSelect) {
@@ -489,6 +496,7 @@ export default function RealisticMap({
   useEffect(() => {
     if (!mapInstanceRef.current || !markersGroupRef.current) return;
 
+    mapInstanceRef.current.invalidateSize();
     markersGroupRef.current.clearLayers();
     if (routePolylineRef.current) {
       mapInstanceRef.current.removeLayer(routePolylineRef.current);

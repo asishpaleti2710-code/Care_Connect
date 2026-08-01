@@ -127,4 +127,24 @@ export const api = {
       },
       true
     ),
+
+  // Settings & Profile Management
+  updateProfile: (profileData) =>
+    request("/api/auth/profile", {
+      method: "PUT",
+      body: JSON.stringify(profileData),
+    }),
+
+  changePassword: (current_password, new_password) =>
+    request("/api/auth/change-password", {
+      method: "PUT",
+      body: JSON.stringify({ current_password, new_password }),
+    }),
+
+  deleteAccount: () =>
+    request("/api/auth/account", {
+      method: "DELETE",
+    }),
+
+  getActivities: () => request("/api/auth/activities"),
 };

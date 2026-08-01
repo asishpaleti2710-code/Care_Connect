@@ -9,6 +9,7 @@ import NeighborDashboard from './pages/NeighborDashboard';
 import Login from './pages/Login';
 import AIAssistantWidget from './components/AIAssistantWidget';
 import SplashVideoIntro from './components/SplashVideoIntro';
+import SettingsModal from './components/SettingsModal';
 import { api } from './services/api';
 
 import { LanguageProvider } from './context/LanguageContext';
@@ -18,6 +19,7 @@ function AppContent() {
   const [loading, setLoading] = useState(true);
   const [activeView, setActiveView] = useState('admin');
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
@@ -125,6 +127,7 @@ function AppContent() {
         onLogout={handleLogout}
         onToggleAI={() => setIsAIOpen(!isAIOpen)}
         onToggleIntro={() => setShowIntro(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         showIntro={false}
       />
 
@@ -133,6 +136,14 @@ function AppContent() {
       <AIAssistantWidget
         isOpen={isAIOpen}
         onClose={() => setIsAIOpen(false)}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        onUpdateUser={(updatedUser) => setUser(updatedUser)}
+        onLogout={handleLogout}
       />
     </div>
   );

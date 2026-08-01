@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { HeartPulse, User, LogOut, Sparkles, Shield, Siren, Activity, Users, Phone, Film, Globe, ChevronDown } from 'lucide-react';
+import { HeartPulse, User, LogOut, Sparkles, Shield, Siren, Activity, Users, Phone, Film, Globe, ChevronDown, Settings } from 'lucide-react';
 import LocationBar from './LocationBar';
 import { useLanguage, TRANSLATIONS } from '../context/LanguageContext';
 
-export default function Navbar({ user, activeView, onChangeView, onLogout, onToggleAI, onToggleIntro, showIntro }) {
+export default function Navbar({ user, activeView, onChangeView, onLogout, onToggleAI, onToggleIntro, onOpenSettings, showIntro }) {
   const { lang, setLang, t } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
 
@@ -22,9 +22,9 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
     <header className="navbar-header" style={{
       display: 'flex',
       flexDirection: 'column',
-      background: 'rgba(15, 23, 42, 0.95)',
+      background: 'var(--bg-navbar, rgba(15, 23, 42, 0.95))',
       backdropFilter: 'blur(16px)',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      borderBottom: '1px solid var(--border-color)',
       position: 'sticky',
       top: 0,
       zIndex: 50
@@ -35,7 +35,7 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '14px 28px',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+        borderBottom: '1px solid var(--border-color)'
       }}>
         {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -65,9 +65,9 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
               onClick={() => setShowLangMenu(!showLangMenu)}
               className="btn btn-secondary"
               style={{
-                background: 'rgba(30, 41, 59, 0.9)',
-                borderColor: 'rgba(255, 255, 255, 0.2)',
-                color: '#f8fafc',
+                background: 'var(--bg-card)',
+                borderColor: 'var(--border-color)',
+                color: 'var(--text-primary)',
                 fontSize: '0.82rem',
                 padding: '6px 12px',
                 display: 'flex',
@@ -166,10 +166,10 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              background: 'rgba(30, 41, 59, 0.8)',
+              background: 'var(--bg-card)',
               padding: '6px 14px',
               borderRadius: '9999px',
-              border: '1px solid rgba(255, 255, 255, 0.12)'
+              border: '1px solid var(--border-color)'
             }}>
               <User size={16} color="#14b8a6" />
               <div style={{ textAlign: 'left' }}>
@@ -178,6 +178,16 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
               </div>
             </div>
           )}
+
+          <button 
+            className="btn btn-secondary" 
+            onClick={onOpenSettings} 
+            title="Settings & Profile" 
+            style={{ background: 'rgba(20, 184, 166, 0.15)', borderColor: 'rgba(20, 184, 166, 0.3)', color: '#14b8a6', padding: '8px 14px' }}
+          >
+            <Settings size={16} />
+            <span>Settings</span>
+          </button>
 
           <button className="btn btn-secondary" onClick={onLogout} title="Log Out" style={{ padding: '8px 14px' }}>
             <LogOut size={16} />
@@ -192,7 +202,8 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
         alignItems: 'center',
         gap: '6px',
         padding: '6px 28px',
-        background: 'rgba(15, 23, 42, 0.6)',
+        background: 'var(--bg-navbar, rgba(15, 23, 42, 0.6))',
+        borderBottom: '1px solid var(--border-color)',
         overflowX: 'auto'
       }}>
         <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '8px' }}>

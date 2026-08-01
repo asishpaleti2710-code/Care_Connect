@@ -39,6 +39,7 @@ export default function ResidentDashboard({ user }) {
   const [emergencyText, setEmergencyText] = useState('');
   const [aiClassification, setAiClassification] = useState(null);
   const [isTriggering, setIsTriggering] = useState(false);
+  const [sosSuccessMsg, setSosSuccessMsg] = useState('');
 
   // Add Guardian Form
   const [isGuardianModalOpen, setIsGuardianModalOpen] = useState(false);
@@ -109,6 +110,8 @@ export default function ResidentDashboard({ user }) {
 
       setEmergencyText('');
       setAiClassification(null);
+      setSosSuccessMsg('🚨 SOS Emergency Signal Dispatched Successfully!');
+      setTimeout(() => setSosSuccessMsg(''), 6000);
       await loadData();
     } catch (err) {
       alert("Error triggering SOS: " + err.message);
@@ -162,14 +165,29 @@ export default function ResidentDashboard({ user }) {
         </div>
 
         {/* Location Quick Button */}
-        <button
-          className="btn btn-secondary"
-          onClick={() => geo.requestLocation()}
-          style={{ background: 'rgba(20, 184, 166, 0.15)', borderColor: 'rgba(20, 184, 166, 0.3)', color: '#14b8a6' }}
-        >
-          <Compass size={18} className={geo.loading ? 'spin' : ''} />
-          <span>{geo.address ? `📍 ${geo.address}` : 'Enable Live GPS Location'}</span>
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              setSelectedLocation(null);
+              geo.requestLocation();
+            }}
+            style={{ background: 'rgba(20, 184, 166, 0.15)', borderColor: 'rgba(20, 184, 166, 0.3)', color: '#14b8a6' }}
+          >
+            <Compass size={18} className={geo.loading ? 'spin' : ''} />
+            <span>{geo.address ? `📍 ${geo.address}` : 'Enable Live GPS Location'}</span>
+          </button>
+          {selectedLocation && (
+            <button
+              className="btn btn-secondary"
+              onClick={() => setSelectedLocation(null)}
+              style={{ background: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)', color: '#f87171' }}
+              title="Clear custom selected map location and return to live GPS"
+            >
+              Clear Custom Pin
+            </button>
+          )}
+        </div>
       </div>
 
       {/* IoT SMART SENSOR TELEMETRY WIDGET */}
@@ -226,10 +244,26 @@ export default function ResidentDashboard({ user }) {
         </div>
 
         {/* SOS Emergency Panic Panel */}
-        <div className="glass-card" style={{ padding: '20px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0.8) 100%)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+        <div className="glass-card" style={{ padding: '20px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, var(--bg-secondary) 100%)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ef4444', marginBottom: '10px' }}>
             {t('triggerSOS')} EMERGENCY PANIC
           </h3>
+
+          {sosSuccessMsg && (
+            <div style={{
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1px solid #10b981',
+              color: '#10b981',
+              padding: '10px',
+              borderRadius: '8px',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              marginBottom: '14px',
+              animation: 'pulse-emergency 1.5s infinite'
+            }}>
+              {sosSuccessMsg}
+            </div>
+          )}
 
           <button
             className="btn btn-sos-pulse"
