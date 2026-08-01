@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export function useGeolocation(options = {}) {
+  let lang = 'en';
+  try {
+    const langCtx = useLanguage();
+    lang = langCtx.lang;
+  } catch (e) {
+    // Fallback if used outside of LanguageProvider
+  }
+
   const [location, setLocation] = useState({
     lat: null,
     lng: null,
@@ -14,9 +23,9 @@ export function useGeolocation(options = {}) {
   });
 
   // Reverse geocode lat/lng to readable street address using OSM Nominatim
-  const reverseGeocode = async (lat, lng) => {
+  const reverseGeocode = async (lat, lng, langCode = 'en') => {
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=${langCode}`);
       if (res.ok) {
         const data = await res.json();
         const display = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -69,7 +78,7 @@ export function useGeolocation(options = {}) {
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude, accuracy, heading, speed } = position.coords;
-        const readableAddress = await reverseGeocode(latitude, longitude);
+        const readableAddress = await reverseGeocode(latitude, longitude, lang);
 
         setLocation({
           lat: latitude,
@@ -107,7 +116,21 @@ export function useGeolocation(options = {}) {
         ...options
       }
     );
-  }, [options]);
+  }, [options, lang]);
+
+  // Update address when language changes
+  const latVal = location.lat;
+  const lngVal = location.lng;
+  useEffect(() => {
+    if (latVal !== null && lngVal !== null) {
+      reverseGeocode(latVal, lngVal, lang).then(readableAddress => {
+        setLocation(prev => ({
+          ...prev,
+          address: readableAddress
+        }));
+      });
+    }
+  }, [lang, latVal, lngVal]);
 
   useEffect(() => {
     // Initial silent probe if permission previously granted
