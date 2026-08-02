@@ -110,6 +110,34 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
 
   if (!isOpen) return null;
 
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileForm(prev => ({ ...prev, avatar_url: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const calculateAge = (dobString) => {
+    if (!dobString) return '';
+    try {
+      const birthDate = new Date(dobString);
+      if (isNaN(birthDate.getTime())) return '';
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    } catch (e) {
+      return '';
+    }
+  };
+
   const handleProfileSave = async (e) => {
     e.preventDefault();
     setSavingProfile(true);
@@ -327,13 +355,38 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                     value={profileForm.username}
                     onChange={e => setProfileForm({ ...profileForm, username: e.target.value })}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
                       textAlign: 'right',
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      outline: 'none'
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
+                    }}
+                  />
+                </div>
+
+                {/* Full Name */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <label style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500 }}>Full Name</label>
+                  <input
+                    type="text"
+                    value={profileForm.full_name}
+                    onChange={e => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                    style={{
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#38bdf8',
+                      textAlign: 'right',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
                     }}
                   />
                 </div>
@@ -341,20 +394,53 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                 {/* Profile Photo Avatar */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <label style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500 }}>Profile Photo</label>
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '50%',
-                    background: '#047857',
-                    color: '#ffffff',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.4rem',
-                    fontWeight: 700,
-                    boxShadow: '0 0 12px rgba(4, 120, 87, 0.5)'
-                  }}>
-                    {profileForm.username ? profileForm.username.charAt(0).toUpperCase() : 'A'}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: '#047857',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.4rem',
+                      fontWeight: 700,
+                      boxShadow: '0 0 12px rgba(4, 120, 87, 0.5)',
+                      overflow: 'hidden'
+                    }}>
+                      {profileForm.avatar_url ? (
+                        <img 
+                          src={profileForm.avatar_url} 
+                          alt="Avatar" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                        />
+                      ) : (
+                        profileForm.username ? profileForm.username.charAt(0).toUpperCase() : 'A'
+                      )}
+                    </div>
+                    <label style={{
+                      padding: '6px 12px',
+                      background: 'rgba(20, 184, 166, 0.15)',
+                      border: '1px solid rgba(20, 184, 166, 0.3)',
+                      color: '#14b8a6',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      Change Photo
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleAvatarChange} 
+                        style={{ display: 'none' }} 
+                      />
+                    </label>
                   </div>
                 </div>
 
@@ -366,13 +452,16 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                     value={profileForm.height}
                     onChange={e => setProfileForm({ ...profileForm, height: e.target.value })}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
                       textAlign: 'right',
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      outline: 'none'
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
                     }}
                   />
                 </div>
@@ -385,12 +474,16 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                     onChange={e => setProfileForm({ ...profileForm, sex: e.target.value })}
                     style={{
                       background: '#1e293b',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
                       fontSize: '0.95rem',
-                      fontWeight: 600
+                      fontWeight: 600,
+                      outline: 'none',
+                      width: '240px',
+                      textAlign: 'right',
+                      cursor: 'pointer'
                     }}
                   >
                     <option value="Male">Male</option>
@@ -399,21 +492,31 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                   </select>
                 </div>
 
-                {/* Date of Birth */}
+                {/* Date of Birth & Age */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <label style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500 }}>Date of Birth</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <label style={{ fontSize: '0.92rem', color: '#e2e8f0', fontWeight: 500 }}>Date of Birth</label>
+                    {profileForm.date_of_birth && (
+                      <span style={{ fontSize: '0.75rem', color: '#14b8a6', fontWeight: 600 }}>
+                        Age: {calculateAge(profileForm.date_of_birth)} years old
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="date"
                     value={profileForm.date_of_birth}
                     onChange={e => setProfileForm({ ...profileForm, date_of_birth: e.target.value })}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
                       textAlign: 'right',
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      outline: 'none'
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
                     }}
                   />
                 </div>
@@ -426,13 +529,16 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                     value={profileForm.location}
                     onChange={e => setProfileForm({ ...profileForm, location: e.target.value })}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
                       textAlign: 'right',
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      outline: 'none'
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
                     }}
                   />
                 </div>
@@ -445,13 +551,16 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                     value={profileForm.time_zone}
                     onChange={e => setProfileForm({ ...profileForm, time_zone: e.target.value })}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
                       textAlign: 'right',
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      outline: 'none'
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
                     }}
                   />
                 </div>
@@ -464,13 +573,16 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
                     value={profileForm.zip_code}
                     onChange={e => setProfileForm({ ...profileForm, zip_code: e.target.value })}
                     style={{
-                      background: 'transparent',
-                      border: 'none',
+                      background: 'rgba(15, 23, 42, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#38bdf8',
                       textAlign: 'right',
                       fontSize: '0.95rem',
                       fontWeight: 600,
-                      outline: 'none'
+                      outline: 'none',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      width: '240px'
                     }}
                   />
                 </div>
