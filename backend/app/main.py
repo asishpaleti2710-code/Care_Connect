@@ -14,6 +14,25 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.PROJECT_NAME)
 
+@app.on_event("startup")
+def startup_event():
+    import socket
+    def get_local_ip():
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
+    local_ip = get_local_ip()
+    print("\n" + "=" * 70)
+    print(" CareConnect Backend Service Active on Local Network")
+    print(f" Host Local IP Address: {local_ip}")
+    print(f" Configure Mobile Frontend API to: http://{local_ip}:8000")
+    print("=" * 70 + "\n")
+
 # Enable CORS for frontend integration
 app.add_middleware(
     CORSMiddleware,

@@ -77,7 +77,7 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
               title="Select Language"
             >
               <Globe size={15} color="#14b8a6" />
-              <span>{currentLangObj.flag} {currentLangObj.name}</span>
+              <span>{currentLangObj.flag} <span className="nav-btn-text">{currentLangObj.name}</span></span>
               <ChevronDown size={14} style={{ transform: showLangMenu ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
             </button>
 
@@ -149,7 +149,7 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
             title="Return to Intro Landing Screen"
           >
             <Film size={16} />
-            <span>{t('introPage')}</span>
+            <span className="nav-btn-text">{t('introPage')}</span>
           </button>
 
           <button 
@@ -158,7 +158,7 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
             style={{ background: 'rgba(139, 92, 246, 0.18)', borderColor: 'rgba(139, 92, 246, 0.4)', color: '#c084fc', fontSize: '0.82rem' }}
           >
             <Sparkles size={16} />
-            <span>{t('aiAssistant')}</span>
+            <span className="nav-btn-text">{t('aiAssistant')}</span>
           </button>
 
           {user && (
@@ -172,7 +172,7 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
               border: '1px solid var(--border-color)'
             }}>
               <User size={16} color="#14b8a6" />
-              <div style={{ textAlign: 'left' }}>
+              <div className="nav-profile-details" style={{ textAlign: 'left' }}>
                 <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc' }}>{user.full_name}</div>
                 <div style={{ fontSize: '0.68rem', color: '#10b981', textTransform: 'uppercase', fontWeight: 700 }}>{user.role}</div>
               </div>
@@ -186,12 +186,12 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
             style={{ background: 'rgba(20, 184, 166, 0.15)', borderColor: 'rgba(20, 184, 166, 0.3)', color: '#14b8a6', padding: '8px 14px' }}
           >
             <Settings size={16} />
-            <span>Settings</span>
+            <span className="nav-btn-text">Settings</span>
           </button>
 
           <button className="btn btn-secondary" onClick={onLogout} title="Log Out" style={{ padding: '8px 14px' }}>
             <LogOut size={16} />
-            <span>{t('logout')}</span>
+            <span className="nav-btn-text">{t('logout')}</span>
           </button>
         </div>
       </div>

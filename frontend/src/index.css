@@ -264,3 +264,56 @@ h1, h2, h3, h4, h5, h6 {
   border-color: var(--accent-teal);
   box-shadow: 0 0 0 3px var(--accent-teal-glow);
 }
+
+/* Mobile CSS Optimization and Viewport Adjustments */
+@media (max-width: 768px) {
+  /* Scrollbar hiding for cleaner mobile UI */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Increase tap target sizes for mobile friendliness */
+  button, 
+  a, 
+  select, 
+  input[type="checkbox"], 
+  input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+
+  /* Prevent text input zoom on focus for mobile devices */
+  input, 
+  textarea, 
+  select {
+    font-size: 16px !important;
+  }
+
+  /* Modal responsiveness */
+  .modal-overlay {
+    padding: 10px;
+  }
+  .modal-container {
+    padding: 20px;
+    border-radius: var(--radius-md);
+  }
+
+  /* Responsive Navbar Utilities */
+  .nav-btn-text {
+    display: none;
+  }
+  .nav-profile-details {
+    display: none !important;
+  }
+  .navbar-header button.btn {
+    padding: 8px 10px !important;
+    gap: 0 !important;
+  }
+}
+
+

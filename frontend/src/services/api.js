@@ -1,5 +1,15 @@
-const BACKEND_URL = "http://127.0.0.1:8000";
-const AI_AGENT_URL = "http://127.0.0.1:8001";
+const getBaseUrl = (defaultPort, envVar) => {
+  if (envVar) return envVar;
+  if (typeof window !== "undefined" && window.location.hostname) {
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    return `${protocol}//${hostname}:${defaultPort}`;
+  }
+  return `http://127.0.0.1:${defaultPort}`;
+};
+
+const BACKEND_URL = getBaseUrl(8000, import.meta.env.VITE_API_URL);
+const AI_AGENT_URL = getBaseUrl(8001, import.meta.env.VITE_AI_URL);
 
 async function request(endpoint, options = {}, isAI = false) {
   const baseUrl = isAI ? AI_AGENT_URL : BACKEND_URL;
