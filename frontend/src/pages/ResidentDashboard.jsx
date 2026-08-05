@@ -108,6 +108,28 @@ export default function ResidentDashboard({ user }) {
         location: finalLocation
       });
 
+      // Play emergency audible alarm tone using Web Audio API
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 1.2);
+      } catch (e) {
+        console.warn("Audio feedback:", e);
+      }
+
+      // Trigger mobile haptic vibration
+      if (navigator.vibrate) {
+        navigator.vibrate([300, 100, 300, 100, 500]);
+      }
+
       setEmergencyText('');
       setAiClassification(null);
       setSosSuccessMsg('🚨 SOS Emergency Signal Dispatched Successfully!');

@@ -35,4 +35,19 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    host: true,
+    port: 5173,
+    allowedHosts: true,
+    proxy: {
+      '/api/ai': {
+        target: 'http://localhost:8001',
+        changeOrigin: true
+      },
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true
+      }
+    }
+  }
 })

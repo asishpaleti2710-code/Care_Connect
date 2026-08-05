@@ -1,11 +1,6 @@
 const getBaseUrl = (defaultPort, envVar) => {
   if (envVar) return envVar;
-  if (typeof window !== "undefined" && window.location.hostname) {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    return `${protocol}//${hostname}:${defaultPort}`;
-  }
-  return `http://127.0.0.1:${defaultPort}`;
+  return "";
 };
 
 const BACKEND_URL = getBaseUrl(8000, import.meta.env.VITE_API_URL);

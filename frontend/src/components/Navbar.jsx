@@ -16,6 +16,21 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
     { id: 'admin', labelKey: 'adminAnalytics', icon: Activity, role: 'admin' },
   ];
 
+  const rolePortalsMap = {
+    resident: ['resident'],
+    security: ['responder'],
+    volunteer: ['responder', 'neighbor'],
+    neighbour: ['neighbor'],
+    neighbor: ['neighbor'],
+    guardian: ['guardian'],
+    caregiver: ['caregiver'],
+    admin: ['resident', 'responder', 'neighbor', 'guardian', 'caregiver', 'admin']
+  };
+
+  const userRole = user?.role?.toLowerCase() || 'resident';
+  const allowedPortalIds = rolePortalsMap[userRole] || [userRole];
+  const visibleNavTabs = navTabs.filter(tab => allowedPortalIds.includes(tab.id));
+
   const currentLangObj = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
   return (
@@ -209,7 +224,7 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
         <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginRight: '8px' }}>
           View Portals:
         </span>
-        {navTabs.map(tab => {
+        {visibleNavTabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeView === tab.id;
           return (

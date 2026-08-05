@@ -22,6 +22,17 @@ function AppContent() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
 
+  const getViewForRole = (role) => {
+    const r = role?.toLowerCase();
+    if (r === 'resident') return 'resident';
+    if (r === 'security' || r === 'volunteer') return 'responder';
+    if (r === 'neighbour' || r === 'neighbor') return 'neighbor';
+    if (r === 'guardian') return 'guardian';
+    if (r === 'caregiver') return 'caregiver';
+    if (r === 'admin') return 'admin';
+    return 'resident';
+  };
+
   useEffect(() => {
     document.title = "CareConnect — Emergency Response & Resident Safety System";
 
@@ -30,11 +41,7 @@ function AppContent() {
       api.getMe()
         .then(u => {
           setUser(u);
-          if (u.role === 'resident') setActiveView('resident');
-          else if (u.role === 'volunteer' || u.role === 'security') setActiveView('responder');
-          else if (u.role === 'guardian') setActiveView('guardian');
-          else if (u.role === 'admin') setActiveView('admin');
-          else setActiveView('caregiver');
+          setActiveView(getViewForRole(u.role));
         })
         .catch(() => {
           localStorage.removeItem('careconnect_token');
@@ -46,6 +53,25 @@ function AppContent() {
     }
   }, []);
 
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      const rolePortalsMap = {
+        resident: ['resident'],
+        security: ['responder'],
+        volunteer: ['responder', 'neighbor'],
+        neighbour: ['neighbor'],
+        neighbor: ['neighbor'],
+        guardian: ['guardian'],
+        caregiver: ['caregiver'],
+        admin: ['resident', 'responder', 'neighbor', 'guardian', 'caregiver', 'admin']
+      };
+      const allowedViews = rolePortalsMap[user.role?.toLowerCase()] || [getViewForRole(user.role)];
+      if (!allowedViews.includes(activeView)) {
+        setActiveView(getViewForRole(user.role));
+      }
+    }
+  }, [user, activeView]);
+
   const handleLogout = () => {
     localStorage.removeItem('careconnect_token');
     localStorage.clear();
@@ -56,11 +82,7 @@ function AppContent() {
   const handleLoginSuccess = (u) => {
     setUser(u);
     setShowIntro(false);
-    if (u.role === 'resident') setActiveView('resident');
-    else if (u.role === 'volunteer' || u.role === 'security') setActiveView('responder');
-    else if (u.role === 'guardian') setActiveView('guardian');
-    else if (u.role === 'admin') setActiveView('admin');
-    else setActiveView('caregiver');
+    setActiveView(getViewForRole(u.role));
   };
 
   if (loading) {
