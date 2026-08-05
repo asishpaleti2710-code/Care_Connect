@@ -41,11 +41,11 @@ export default defineConfig({
     allowedHosts: true,
     proxy: {
       '/api/ai': {
-        target: 'http://localhost:8001',
+        target: process.env.VITE_AI_URL || process.env.VITE_API_URL || 'https://care-connect-qtsk.vercel.app',
         changeOrigin: true
       },
       '/api': {
-        target: 'http://localhost:8000',
+        target: process.env.VITE_API_URL || 'https://care-connect-qtsk.vercel.app',
         changeOrigin: true
       }
     }
