@@ -6,72 +6,77 @@
 [![Vite](https://img.shields.io/badge/Bundler-Vite_6-646CFF.svg)](https://vitejs.dev/)
 [![Capacitor](https://img.shields.io/badge/Mobile-Capacitor_8-119EFF.svg)](https://capacitorjs.com/)
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**CareConnect** is a comprehensive, cross-platform community emergency response and caregiving network. Designed to bridge residents, caregivers, family members, and administrative staff, CareConnect provides real-time emergency dispatch, service tracking, dynamic maps, AI-assisted care recommendations, and mobile readiness for Android and iOS devices.
+**CareConnect** is a state-of-the-art, cross-platform community emergency response and caregiving network. Designed to seamlessly connect residents, caregivers, family guardians, community volunteers, security responders, and administrative directors, CareConnect delivers real-time emergency dispatches, interactive GPS maps, AI-assisted medical risk analysis, and native mobile builds for Android and iOS.
 
 ---
 
-## ✨ Key Features
+## 🌐 Live & Deployment URLs
 
-- **🚨 SOS & Emergency Dispatch**: Instant emergency alert triggering with location details and confirmation workflows for rapid responder dispatch.
-- **👥 Multi-Role Dashboard**: Custom tailored interfaces for:
-  - **Residents**: Emergency triggering, service requests, medical status, and profile management.
-  - **Caregivers**: Task assignments, resident monitoring, emergency alerts, and updates.
-  - **Family Members**: Loved one's status tracking, updates, and direct communications.
-  - **Admin / Staff**: System management, analytics, user roles, and dispatch overview.
-- **🤖 AI Agent Integration**: Intelligent FastAPI-based AI agent to assist caregivers and residents with automated care recommendations and queries.
-- **🗺️ Interactive Maps & Location Services**: Integrated Leaflet maps for emergency geolocation tracking and community mapping.
-- **📱 Cross-Platform & Mobile Ready**: Built with Capacitor & PWA support to seamlessly compile into native **Android** and **iOS** applications.
-- **🌐 Dynamic Multi-Language Support**: Built-in internationalization for dynamic location and interface translations.
-- **⚙️ Profile & System Settings**: Avatar uploads, computed age displays, contact details, and configurable app preferences.
+- **GitHub Repository**: [https://github.com/asishpaleti2710-code/Care_Connect](https://github.com/asishpaleti2710-code/Care_Connect)
+- **Deployed Backend API**: [https://care-connect-qtsk.vercel.app](https://care-connect-qtsk.vercel.app)
+- **Local Dev Web App**: `http://localhost:5173`
+- **Local Backend API**: `http://localhost:8000` *(API Docs: `http://localhost:8000/docs`)*
+- **Local AI Agent Microservice**: `http://localhost:8001`
+
+---
+
+## ✨ Key Features & Multi-Portal Architecture
+
+CareConnect features **6 specialized role-based portals** to serve every user in the emergency response chain:
+
+| Portal | Target Role | Key Capabilities |
+| :--- | :--- | :--- |
+| 🚨 **Resident SOS** | Senior Residents / Patients | One-tap emergency SOS triggering, real-time dispatch tracking, medical history profile, emergency contact management, and AI risk classifier. |
+| 🛡️ **Responders & Security** | Security, Police, EMTs, Volunteers | Real-time emergency incident feed, one-click incident acceptance, turn-by-turn Leaflet/OSRM map navigation, and incident status progression (`Accepted` ➔ `En Route` ➔ `Resolved`). |
+| 💓 **Neighbor Network** | Community Neighbors & Volunteers | Community-based emergency alert network enabling nearby neighbors to accept and provide immediate assistance before official emergency services arrive. |
+| 📞 **Guardians** | Family Members / Next of Kin | Continuous peace-of-mind monitoring, live emergency alert notifications when a ward triggers an SOS, and direct caregiver contact details. |
+| 📋 **Caregiver Roster** | Caregivers / Nurses | Daily resident care roster, vital sensor telemetry monitoring (heart rate, fall detection), medication logs, and AI-assisted medical note analysis. |
+| 📊 **Admin Analytics** | System Admins / Directors | Executive command center, system-wide dispatch override, response time analytics, resident/guardian directory management, and full access to **all sub-portals**. |
+
+> **Note on the Volunteer Role**: Volunteers act as dual-capability community responders and have built-in access to both the **Responders & Security** portal (for official emergency dispatches) and the **Neighbor Network** portal (for local community wellness checks).
+
+---
+
+## 🔄 End-to-End System Working Process
+
+```
+┌─────────────────┐      ┌───────────────────────────┐      ┌─────────────────────────────┐
+│ 1. SOS Trigger  │ ───► │ 2. AI Risk Classification │ ───► │ 3. Real-Time Broadcast      │
+│ Resident or     │      │ FastAPI AI Agent assesses │      │ Broadcasts SOS to           │
+│ Sensor Anomaly  │      │ emergency urgency level   │      │ Responders, Neighbors &     │
+└─────────────────┘      └───────────────────────────┘      │ Guardians                   │
+                                                            └──────────────┬──────────────┘
+                                                                           │
+┌─────────────────┐      ┌───────────────────────────┐                     │
+│ 5. Audit & Logs │ ◄─── │ 4. On-Scene & Resolution  │ ◄───────────────────┘
+│ Logged in Admin │      │ Responder accepts, follows│
+│ Analytics Panel │      │ GPS map & marks Resolved  │
+└─────────────────┘      └───────────────────────────┘
+```
+
+### Detailed Operational Flow:
+1. **Emergency Triggering**: A resident presses the high-contrast SOS button on their mobile or web dashboard.
+2. **AI Classification**: The description is processed by the **FastAPI AI Agent** (`ai-agent/main.py`), categorizing risk severity (e.g., *Critical - Cardiac Risk*).
+3. **Multi-Channel Dispatch**: The backend broadcasts the alert to active **Security Responders**, **Volunteer Responders**, **Nearby Neighbors**, and the resident's **Family Guardian**.
+4. **Responder Acceptance & GPS Guidance**: A responder accepts the incident. The system locks the dispatch, generates turn-by-turn Leaflet/OSRM route navigation, and provides the responder with vital medical summaries.
+5. **Resolution & Executive Auditing**: Upon resolving the incident on-scene, status updates to `Resolved`. Detailed response metrics are archived in **Admin Analytics**.
 
 ---
 
 ## 🏗️ Architecture & Tech Stack
 
-### **Frontend**
-- **Framework**: React 19 + Vite
-- **UI & Icons**: Lucide React Icons, Vanilla CSS Design System
-- **Mapping**: Leaflet / React-Leaflet
-- **Mobile Integration**: Capacitor 8 (Android & iOS targets), Vite PWA Plugin
-
-### **Backend**
-- **Framework**: FastAPI (Python)
-- **Database**: SQLite with SQLAlchemy ORM
-- **Authentication**: JWT (PyJWT) with Passlib/Bcrypt password hashing
-- **Data Validation**: Pydantic v2
-
-### **AI Agent Service**
-- **Framework**: FastAPI (Python)
-- **Service**: Agent decision processing engine for automated caregiver assistance
-
----
-
-## 📁 Repository Structure
-
 ```
-CareConnect/
-├── frontend/             # React + Vite web & mobile frontend
-│   ├── src/              # Components, Pages, Services, Contexts
-│   ├── android/          # Native Android Capacitor Project
-│   ├── ios/              # Native iOS Capacitor Project
-│   ├── package.json
-│   └── vite.config.js
-├── backend/              # FastAPI REST backend server
-│   ├── app/              # Models, Routers, Schemas, Services
-│   ├── requirements.txt
-│   └── seed.py           # Database seeder script
-├── ai-agent/             # AI Assistant microservice
-│   ├── agent_service.py  # Core AI logic
-│   ├── main.py           # FastAPI AI server endpoint
-│   └── requirements.txt
-├── database/             # Database schema & migrations
-└── README.md             # Documentation
+CareConnect Platform
+ ├── Frontend: React 19 + Vite + Lucide Icons + Leaflet Maps + Capacitor 8
+ ├── Backend API: Python FastAPI + SQLite ORM + PyJWT Authentication
+ └── AI Microservice: Python FastAPI + Automated Care Decision Engine
 ```
 
 ---
 
-## 🚀 Quick Start Guide
+## 🚀 Quick Start Guide (Local Environment)
 
 ### Prerequisites
 - **Node.js** (v18+ recommended)
@@ -80,14 +85,15 @@ CareConnect/
 
 ---
 
-### 1. Backend Setup
+### 1. Start Backend API Server
 
 ```bash
 cd backend
 
-# Create and activate Python virtual environment
+# Create virtual environment
 python -m venv venv
 
+# Activate virtual environment
 # Windows:
 venv\Scripts\activate
 # macOS/Linux:
@@ -96,38 +102,39 @@ venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the FastAPI backend server
+# Seed test database (optional)
+python app/seed.py
+
+# Run FastAPI backend
 uvicorn app.main:app --reload --port 8000
 ```
-> The API server will start at `http://localhost:8000`. API docs available at `http://localhost:8000/docs`.
+> Backend runs at `http://localhost:8000`. Swagger API docs available at `http://localhost:8000/docs`.
 
 ---
 
-### 2. AI Agent Service Setup
+### 2. Start AI Agent Service
 
 ```bash
 cd ai-agent
 
-# Activate virtual environment or create one
+# Activate virtual environment & install requirements
 python -m venv venv
 venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
 
-# Start the AI Agent service
+# Start AI Agent service
 python main.py
 ```
-> The AI Agent service runs on port `8001` (or configured port).
+> AI Agent runs on port `http://localhost:8001`.
 
 ---
 
-### 3. Frontend Setup
+### 3. Start Frontend App
 
 ```bash
 cd frontend
 
-# Install Node dependencies
+# Install npm packages
 npm install
 
 # Start Vite development server
@@ -137,31 +144,40 @@ npm run dev
 
 ---
 
-## 📱 Mobile App (Capacitor)
+## 🔑 Demo Account Credentials
 
-CareConnect is pre-configured with Capacitor for native mobile app compilation.
+| Role | Email | Password |
+| :--- | :--- | :--- |
+| **Admin / Director** | `admin@careconnect.org` | `admin123` |
+| **Resident (Ashish)** | `ashish@careconnect.org` | `resident123` |
+| **Resident (Eleanor)** | `eleanor@careconnect.org` | `resident123` |
+| **Guardian** | `guardian@careconnect.org` | `guardian123` |
+| **Security Responder** | `security@careconnect.org` | `security123` |
 
-### Sync Web Assets to Mobile Projects
+---
+
+## 📱 Mobile App Compilation (Capacitor)
+
+CareConnect compiles directly into native Android and iOS apps using Capacitor:
+
 ```bash
 cd frontend
+
+# Sync web assets to native mobile projects
 npm run cap:sync
-```
 
-### Open in Android Studio
-```bash
+# Open in Android Studio
 npm run cap:open-android
-```
 
-### Open in Xcode (macOS)
-```bash
+# Open in Xcode (macOS)
 npm run cap:open-ios
 ```
 
 ---
 
-## 🧪 Testing
+## 🧪 Automated Testing
 
-### Running Backend API Tests
+Run end-to-end API test suites:
 ```bash
 cd backend
 python test_api.py
@@ -171,4 +187,4 @@ python test_api.py
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License. See `LICENSE` for details.
