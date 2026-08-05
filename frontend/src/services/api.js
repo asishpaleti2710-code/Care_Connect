@@ -1,8 +1,6 @@
-const DEPLOYED_BACKEND_URL = "https://care-connect-qtsk.vercel.app";
-
 const sanitizeUrl = (url) => (url ? url.replace(/\/+$/, "") : "");
 
-const BACKEND_URL = sanitizeUrl(import.meta.env.VITE_API_URL || DEPLOYED_BACKEND_URL);
+const BACKEND_URL = sanitizeUrl(import.meta.env.VITE_API_URL || "");
 const AI_AGENT_URL = sanitizeUrl(import.meta.env.VITE_AI_URL || BACKEND_URL);
 
 async function request(endpoint, options = {}, isAI = false) {
