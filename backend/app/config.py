@@ -6,6 +6,6 @@ load_dotenv()
 class Settings:
     PROJECT_NAME: str = os.getenv("PROJECT_NAME", "CareConnect API")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./careconnect.db")
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "careconnect_secret")
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "careconnect_secret_key_production_secure_32bytes_minimum")
 
 settings = Settings()

@@ -9,9 +9,17 @@ from app.models.sos import SOSAlert
 from app.services.auth import hash_password
 from datetime import datetime, timedelta
 
-def seed_database():
-    # Re-create database schema with new tables
-    Base.metadata.drop_all(bind=engine)
+def seed_database(force: bool = False):
+    db_check = SessionLocal()
+    try:
+        if not force and db_check.query(User).first() is not None:
+            print("Database already contains data. Skipping seed.")
+            return
+    except Exception:
+        pass
+    finally:
+        db_check.close()
+
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
