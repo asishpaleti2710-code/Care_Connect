@@ -1,15 +1,21 @@
-# CareConnect Production Profile Configuration (YAML)
+# ===================================================================
+# CareConnect - Production YAML Configuration (Railway MySQL)
+# Profile: application-prod.yml
+# ===================================================================
+
 server:
   port: ${PORT:8000}
   host: ${HOST:0.0.0.0}
 
 spring:
   application:
-    name: ${PROJECT_NAME:CareConnect Cloud API}
+    name: CareConnect Cloud API
   profiles:
-    active: production
+    active: prod
   datasource:
-    url: ${DATABASE_URL:mysql+pymysql://user:pass@host:3306/careconnect_db}
+    url: ${MYSQL_URL:jdbc:mysql://${MYSQLHOST:containers-us-west-1.railway.app}:${MYSQLPORT:3306}/${MYSQLDATABASE:railway}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8&autoReconnect=true}
+    username: ${MYSQLUSER:root}
+    password: ${MYSQLPASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       maximum-pool-size: 20
@@ -17,6 +23,17 @@ spring:
       idle-timeout: 300000
       max-lifetime: 1800000
       connection-timeout: 30000
+      connection-test-query: SELECT 1
+      pool-name: CareConnectRailwayHikariPool
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
 
 security:
   jwt:
