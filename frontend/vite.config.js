@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg', 'intro.mp4'],
+      includeAssets: ['favicon.svg', 'icons.svg'],
       manifest: {
         name: 'CareConnect — Emergency Response & Resident Safety System',
         short_name: 'CareConnect',
@@ -45,7 +45,7 @@ export default defineConfig({
         changeOrigin: true
       },
       '/api': {
-        target: process.env.VITE_API_URL || 'http://localhost:8000',
+        target: process.env.VITE_API_BASE_URL || process.env.VITE_API_URL || 'http://localhost:8000',
         changeOrigin: true
       }
     }

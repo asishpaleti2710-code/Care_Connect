@@ -6,7 +6,7 @@ export default function AIAssistantWidget({ isOpen, onClose }) {
   const [messages, setMessages] = useState([
     {
       sender: 'bot',
-      text: 'Hello! I am your CareConnect AI Assistant. Ask me about resident emergency protocols, blood pressure guidelines, dementia care routines, or medication notes.'
+      text: 'Hello! I am CarePulse AI, your intelligent medical care assistant. Ask me about resident emergency protocols, blood pressure guidelines, dementia care routines, or medication notes.'
     }
   ]);
   const [input, setInput] = useState('');
@@ -15,19 +15,49 @@ export default function AIAssistantWidget({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const getLocalFallbackReply = (query) => {
-    const q = query.lower ? query.lower() : query.toLowerCase();
-    if (q.includes("fall")) {
-      return "🚨 **Fall Emergency Protocol**: 1) Do NOT move resident if head/spinal injury is suspected. 2) Check breathing & consciousness. 3) Keep resident warm with a blanket. 4) Trigger SOS panic alert to dispatch Security & Medical Volunteers.";
-    } else if (q.includes("bp") || q.includes("blood pressure")) {
-      return "🩺 **Blood Pressure Standards**: Normal senior target is <130/80 mmHg. If reading exceeds 160/100, re-measure in 15 mins. If accompanied by chest pain or dizziness, press SOS panic button immediately.";
+    const q = query ? query.toLowerCase() : "";
+
+    // Medicines DB
+    if (q.includes("paracetamol") || q.includes("acetaminophen")) {
+      return "💊 **Paracetamol / Acetaminophen (Pain & Fever)**:\n• Dosage: 500mg-1000mg q4-6h (Max 4g/day).\n• Warning: Watch daily limit to protect liver. Avoid alcohol.";
+    } else if (q.includes("ibuprofen") || q.includes("advil")) {
+      return "💊 **Ibuprofen (NSAID)**:\n• Dosage: 200mg-400mg q6-8h with food.\n• Warning: Take with food to protect stomach. Caution in seniors with hypertension or kidney conditions.";
+    } else if (q.includes("aspirin")) {
+      return "💊 **Aspirin (Antiplatelet / Cardioprotective)**:\n• Dosage: 81mg daily for heart protection, or 325mg chewed immediately for acute chest pain emergency.";
+    } else if (q.includes("amlodipine") || q.includes("norvasc")) {
+      return "💊 **Amlodipine (Blood Pressure)**:\n• Dosage: 5mg-10mg daily.\n• Indications: Hypertension & Angina. Monitor for ankle swelling or dizziness.";
+    } else if (q.includes("lisinopril") || q.includes("metoprolol")) {
+      return "💊 **Lisinopril / Metoprolol (Blood Pressure & Cardiac)**:\n• Indications: Hypertension, Angina, Heart failure.\n• Warning: Monitor blood pressure & pulse before administering.";
+    } else if (q.includes("metformin") || q.includes("insulin")) {
+      return "💊 **Metformin / Insulin (Diabetes Control)**:\n• Metformin: 500mg-1000mg with meals.\n• Insulin: Per sliding scale. Always keep 15g fast-acting sugar nearby for hypoglycemia risk.";
+    } else if (q.includes("nitroglycerin")) {
+      return "💊 **Nitroglycerin (Acute Chest Pain / Angina)**:\n• Dosage: 1 sublingual dose under tongue every 5 mins up to 3 doses. Press SOS immediately if pain persists after 1st dose.";
+    } else if (q.includes("medication") || q.includes("medicine") || q.includes("pill") || q.includes("drug")) {
+      return "💊 **5 Rights of Medication Safety**:\n1) Right Patient 2) Right Drug 3) Right Dose 4) Right Route 5) Right Time. Store drugs in a cool dry place and log all doses.";
+    }
+
+    // Medical Vitals & Emergencies
+    else if (q.includes("bp") || q.includes("blood pressure") || q.includes("vitals")) {
+      return "🩺 **Senior Vitals Reference Ranges**:\n• BP: Target <120/80 mmHg. (>180/120 is Hypertensive Crisis ➔ Press SOS).\n• Pulse: 60-100 bpm at rest.\n• SpO2: 95%-100% on room air.\n• Temp: 97.8°F-99.1°F.";
+    } else if (q.includes("stroke") || q.includes("fast")) {
+      return "🧠 **Stroke F.A.S.T. Warning**:\n• **F**ace drooping • **A**rm weakness • **S**peech difficulty • **T**ime to press SOS immediately!";
+    } else if (q.includes("heart attack") || q.includes("chest pain")) {
+      return "🚨 **Cardiac Emergency**: Sit upright, loosen tight clothes, give 325mg Aspirin to chew if not allergic, and press red CareConnect SOS button immediately!";
+    } else if (q.includes("fall")) {
+      return "🚨 **Fall Emergency Protocol**: Do NOT force resident to stand up if head or spinal injury is suspected. Keep resident warm & press red SOS button for responder dispatch.";
+    } else if (q.includes("seizure")) {
+      return "⚡ **Seizure Protocol**: Turn resident onto side (recovery position). Do NOT place objects in mouth. Clear sharp hazards. Time seizure duration.";
     } else if (q.includes("dementia") || q.includes("memory")) {
-      return "🧠 **Dementia Care Guidance**: Maintain a structured daily routine, speak in calm simple sentences, use visual orientation cues (clocks/calendars), and gently redirect agitation without arguing.";
+      return "🧠 **Dementia Care Guidance**: Maintain daily routine, use simple reassuring sentences, visual clocks/photos, and gently redirect agitation without arguing.";
+    }
+
+    // CareConnect App
+    else if (q.includes("app") || q.includes("careconnect") || q.includes("portal") || q.includes("role")) {
+      return "📱 **CareConnect Platform**: Features 6 role portals — Resident SOS, Security Responders, Volunteer Network, Family Guardians, Caregiver Roster, and Admin Command Center.";
     } else if (q.includes("sos") || q.includes("emergency") || q.includes("panic")) {
-      return "⚡ **CareConnect SOS System**: Press the red SOS button on your Resident or Navbar portal. It broadcasts immediate location coordinates to on-duty Security and sends SMS alerts to linked Guardians.";
-    } else if (q.includes("medication") || q.includes("pill") || q.includes("dose")) {
-      return "💊 **Medication Safety**: Verify 5 Rights: Right Patient, Right Drug, Right Dose, Right Route, and Right Time. Log all doses in the Resident Medical Record.";
+      return "⚡ **CareConnect SOS System**: Pressing the red SOS button broadcasts live location coordinates & medical profile to Security, Volunteers, and notifies Guardians.";
     } else {
-      return `🤖 **CareConnect Medical Assistant**: Query "${query}" recorded. Always verify urgent medical symptoms with on-duty clinical staff or trigger the SOS Emergency Alert.`;
+      return `🤖 **CarePulse AI**: Query "${query}" recorded. Ask me about any medicine (Paracetamol, Ibuprofen, Amlodipine, Insulin), medical vitals, stroke/cardiac protocols, or CareConnect app features!`;
     }
   };
 
@@ -91,7 +121,7 @@ export default function AIAssistantWidget({ isOpen, onClose }) {
             <Sparkles size={18} color="#ffffff" />
           </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>AI Care Assistant</h3>
+            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>CarePulse AI</h3>
             <span style={{ fontSize: '0.72rem', color: '#10b981', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
               Active Medical Intelligence

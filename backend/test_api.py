@@ -7,7 +7,8 @@ client = TestClient(app)
 def test_health_check():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "database": "sqlite"}
+    data = response.json()
+    assert data["status"] == "healthy"
     print("HEALTH CHECK OK")
 
 def test_auth_login():

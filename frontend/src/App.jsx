@@ -8,7 +8,6 @@ import AdminDashboard from './pages/AdminDashboard';
 import NeighborDashboard from './pages/NeighborDashboard';
 import Login from './pages/Login';
 import AIAssistantWidget from './components/AIAssistantWidget';
-import SplashVideoIntro from './components/SplashVideoIntro';
 import SettingsModal from './components/SettingsModal';
 import { api } from './services/api';
 
@@ -20,7 +19,6 @@ function AppContent() {
   const [activeView, setActiveView] = useState('admin');
   const [isAIOpen, setIsAIOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [showIntro, setShowIntro] = useState(true);
 
   const getViewForRole = (role) => {
     const r = role?.toLowerCase();
@@ -76,12 +74,10 @@ function AppContent() {
     localStorage.removeItem('careconnect_token');
     localStorage.clear();
     setUser(null);
-    setShowIntro(true);
   };
 
   const handleLoginSuccess = (u) => {
     setUser(u);
-    setShowIntro(false);
     setActiveView(getViewForRole(u.role));
   };
 
@@ -102,26 +98,16 @@ function AppContent() {
     );
   }
 
-  // 1. FULLSCREEN INTRO VIDEO BEFORE WEBSITE OPENS
-  if (showIntro) {
-    return (
-      <SplashVideoIntro
-        onComplete={() => setShowIntro(false)}
-      />
-    );
-  }
-
-  // 2. WEBSITE: LOGIN SCREEN (if unauthenticated)
+  // 1. WEBSITE: LOGIN SCREEN (if unauthenticated)
   if (!user) {
     return (
       <Login
         onLoginSuccess={handleLoginSuccess}
-        onBackToIntro={() => setShowIntro(true)}
       />
     );
   }
 
-  // 3. WEBSITE: AUTHENTICATED DASHBOARDS
+  // 2. WEBSITE: AUTHENTICATED DASHBOARDS
   const renderActiveView = () => {
     switch (activeView) {
       case 'resident':
@@ -148,9 +134,7 @@ function AppContent() {
         onChangeView={(view) => setActiveView(view)}
         onLogout={handleLogout}
         onToggleAI={() => setIsAIOpen(!isAIOpen)}
-        onToggleIntro={() => setShowIntro(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        showIntro={false}
       />
 
       {renderActiveView()}

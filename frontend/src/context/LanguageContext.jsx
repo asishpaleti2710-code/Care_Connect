@@ -16,7 +16,7 @@ export const TRANSLATIONS = {
     adminAnalytics: 'Admin Analytics',
     neighborPortal: 'Neighbor Network',
     introPage: '🎬 Intro Page',
-    aiAssistant: 'AI Assistant',
+    aiAssistant: 'CarePulse AI',
     logout: 'Logout',
     welcome: 'Welcome',
     emergencyLocation: 'Emergency Location',

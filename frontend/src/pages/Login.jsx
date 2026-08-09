@@ -13,7 +13,7 @@ import {
 import { api } from '../services/api';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function Login({ onLoginSuccess, onBackToIntro }) {
+export default function Login({ onLoginSuccess }) {
   const { t } = useLanguage();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
@@ -80,22 +80,6 @@ export default function Login({ onLoginSuccess, onBackToIntro }) {
       margin: '0 auto',
       background: '#0f172a'
     }}>
-      {onBackToIntro && (
-        <button
-          onClick={onBackToIntro}
-          className="btn btn-secondary"
-          style={{
-            alignSelf: 'flex-start',
-            marginBottom: '20px',
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            fontSize: '0.85rem'
-          }}
-        >
-          <ArrowLeft size={16} />
-          <span>{t('backToIntro')}</span>
-        </button>
-      )}
 
       <div className="glass-card" style={{
         width: '100%',

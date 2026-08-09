@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # CareConnect FastAPI Cloud Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: careconnect_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PROJECT_NAME=CareConnect Cloud API
+      - SECRET_KEY=careconnect_super_secret_production_key_32chars_min
+      - DATABASE_URL=mysql+pymysql://careconnect_user:careconnect_secure_pass@db:3306/careconnect_db
+      - CORS_ORIGINS=*
+      - PORT=8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # MySQL 8.0 Production Database Service
+  db:
+    image: mysql:8.0
+    container_name: careconnect_mysql
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root_master_password_change_in_prod
+      MYSQL_DATABASE: careconnect_db
+      MYSQL_USER: careconnect_user
+      MYSQL_PASSWORD: careconnect_secure_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "careconnect_user", "-pcareconnect_secure_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+    driver: local

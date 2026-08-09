@@ -1,11 +1,13 @@
 const sanitizeUrl = (url) => (url ? url.replace(/\/+$/, "") : "");
 
-const BACKEND_URL = sanitizeUrl(import.meta.env.VITE_API_URL || "");
-const AI_AGENT_URL = sanitizeUrl(import.meta.env.VITE_AI_URL || BACKEND_URL);
+const DEFAULT_BACKEND_URL = sanitizeUrl(import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "");
+const DEFAULT_AI_AGENT_URL = sanitizeUrl(import.meta.env.VITE_AI_URL || DEFAULT_BACKEND_URL);
 
 async function request(endpoint, options = {}, isAI = false) {
-  const baseUrl = isAI ? AI_AGENT_URL : BACKEND_URL;
-  const token = localStorage.getItem("careconnect_token");
+  const customOnlineUrl = typeof localStorage !== 'undefined' ? localStorage.getItem("careconnect_api_base_url") : null;
+  const activeBackendUrl = customOnlineUrl ? sanitizeUrl(customOnlineUrl) : DEFAULT_BACKEND_URL;
+  const baseUrl = isAI ? DEFAULT_AI_AGENT_URL : activeBackendUrl;
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem("careconnect_token") : null;
 
   const headers = {
     "Content-Type": "application/json",

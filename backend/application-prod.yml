@@ -1,0 +1,29 @@
+# CareConnect Production Profile Configuration (YAML)
+server:
+  port: ${PORT:8000}
+  host: ${HOST:0.0.0.0}
+
+spring:
+  application:
+    name: ${PROJECT_NAME:CareConnect Cloud API}
+  profiles:
+    active: production
+  datasource:
+    url: ${DATABASE_URL:mysql+pymysql://user:pass@host:3306/careconnect_db}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1800000
+      connection-timeout: 30000
+
+security:
+  jwt:
+    secret: ${SECRET_KEY:careconnect_secret_key_production_secure_32bytes_minimum}
+    expiration-hours: 24
+
+cors:
+  allowed-origins: ${CORS_ORIGINS:*}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"

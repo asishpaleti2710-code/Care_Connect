@@ -1,30 +1,54 @@
 # CareConnect 🏥
 ### Community Emergency Response & Assistance Network
 
-[![React](https://img.shields.io/badge/Frontend-React_19-blue.svg)](https://react.dev/)
+[![CI/CD Pipeline](https://github.com/asishpaleti2710-code/Care_Connect/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/asishpaleti2710-code/Care_Connect/actions/workflows/ci-cd.yml)
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
-[![Vite](https://img.shields.io/badge/Bundler-Vite_6-646CFF.svg)](https://vitejs.dev/)
-[![Capacitor](https://img.shields.io/badge/Mobile-Capacitor_8-119EFF.svg)](https://capacitorjs.com/)
-[![Python](https://img.shields.io/badge/Python-3.10+-3776AB.svg)](https://www.python.org/)
+[![Flutter](https://img.shields.io/badge/Mobile-Flutter_3.x-02569B.svg)](https://flutter.dev/)
+[![React](https://img.shields.io/badge/Frontend-React_19-61DAFB.svg)](https://react.dev/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg)](https://www.python.org/)
+[![Database](https://img.shields.io/badge/Database-MySQL_8.0_%7C_Postgres-4479A1.svg)](https://www.mysql.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-**CareConnect** is a state-of-the-art, cross-platform community emergency response and caregiving network. Designed to seamlessly connect residents, caregivers, family guardians, community volunteers, security responders, and administrative directors, CareConnect delivers real-time emergency dispatches, interactive GPS maps, AI-assisted medical risk analysis, and native mobile builds for Android and iOS.
+**CareConnect** is a state-of-the-art, cross-platform community emergency response and caregiving network. Designed to seamlessly connect residents, caregivers, family guardians, community volunteers, security responders, and administrative directors, CareConnect delivers real-time emergency dispatches, zero-unlock mobile lock screen controls, interactive GPS maps, and AI-assisted clinical triage.
 
 ---
 
-## 🌐 Live & Deployment URLs
+## 🚀 1-Click Cloud Deployment
 
-- **GitHub Repository**: [https://github.com/asishpaleti2710-code/Care_Connect](https://github.com/asishpaleti2710-code/Care_Connect)
-- **Deployed Backend API**: [https://care-connect-qtsk.vercel.app](https://care-connect-qtsk.vercel.app)
+Deploy your own live online instance of CareConnect in minutes:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/asishpaleti2710-code/Care_Connect)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/asishpaleti2710-code/Care_Connect&root-directory=frontend)
+
+> 📖 **Full Deployment Manual**: Check [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for step-by-step instructions for Render, Railway, Cloud MySQL (Aiven), and mobile APK release.
+
+---
+
+## 🌐 Production & Online URLs
+
+- **Production Cloud Backend API**: `https://careconnect-backend.onrender.com`
+- **Interactive Cloud API Docs**: `https://careconnect-backend.onrender.com/docs`
+- **System Health Diagnostics**: `https://careconnect-backend.onrender.com/health`
+- **Web Frontend (Vercel/PWA)**: `https://careconnect-app.vercel.app`
 - **Local Dev Web App**: `http://localhost:5173`
-- **Local Backend API**: `http://localhost:8000` *(API Docs: `http://localhost:8000/docs`)*
-- **Local AI Agent Microservice**: `http://localhost:8001`
+- **Local Dev Backend API**: `http://localhost:8000`
 
 ---
 
-## ✨ Key Features & Multi-Portal Architecture
+## 📱 Mobile Lock Screen Emergency Hub (Zero-Unlock Mode)
 
-CareConnect features **6 specialized role-based portals** to serve every user in the emergency response chain:
+CareConnect features a dedicated **Mobile Lock Screen Emergency Hub** (`CareConnect-Flutter`) engineered for instant emergency dispatch without needing to unlock the phone:
+
+1. **Direct Lock Screen Display (`showWhenLocked="true"`)**: Displays the high-urgency SOS interface over Android keyguards.
+2. **1-Tap Glowing SOS Button**: Fast pulse emergency trigger with 3-second abort safety countdown.
+3. **Paramedic Medical ID**: Blood Group (`O+`), Allergies (`Penicillin`), and Primary Guardian details visible to first responders without PIN/biometrics.
+4. **Audio-Visual Strobe Beacon**: Flashes the screen in high-contrast red/white and sounds siren alarms to signal location.
+5. **Speed Dial Shortcuts**: Immediate 1-touch calls for `911 / 112` and primary guardian line.
+6. **Online Cloud Sync**: Real-time cloud dispatch with offline SMS / mesh fallback.
+
+---
+
+## ✨ Specialized Role Portals
 
 | Portal | Target Role | Key Capabilities |
 | :--- | :--- | :--- |
@@ -35,156 +59,79 @@ CareConnect features **6 specialized role-based portals** to serve every user in
 | 📋 **Caregiver Roster** | Caregivers / Nurses | Daily resident care roster, vital sensor telemetry monitoring (heart rate, fall detection), medication logs, and AI-assisted medical note analysis. |
 | 📊 **Admin Analytics** | System Admins / Directors | Executive command center, system-wide dispatch override, response time analytics, resident/guardian directory management, and full access to **all sub-portals**. |
 
-> **Note on the Volunteer Role**: Volunteers act as dual-capability community responders and have built-in access to both the **Responders & Security** portal (for official emergency dispatches) and the **Neighbor Network** portal (for local community wellness checks).
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    subgraph Clients["📱 Client Layer (Global Internet)"]
+        MobileApp["Flutter Mobile App (Android APK / iOS)<br/><i>Zero-Unlock Lockscreen Emergency Hub</i>"]
+        WebApp["React 19 PWA (Vercel / Netlify / Browser)<br/><i>Live Incident Maps & Command Center</i>"]
+    end
+
+    subgraph SecurityGateway["🛡️ Gateway & Network Layer"]
+        HTTPS["HTTPS / TLS 1.3 Termination (Render / Cloudflare)"]
+        CORS["CORS Dynamic Origin Filter"]
+        JWT["JWT Bearer Authentication Guard"]
+    end
+
+    subgraph BackendCluster["🚀 Backend Service (Render / Railway / Docker)"]
+        FastAPI["CareConnect FastAPI Cloud Engine<br/><i>Gunicorn + 2 Uvicorn Workers</i>"]
+        AuthRouter["/api/auth (Login, Register, RBAC)"]
+        SosRouter["/api/incidents & /api/sos (Emergency Dispatch)"]
+        AiRouter["/api/ai (Clinical Notes, Triage Classifier)"]
+        HealthRouter["/health (Database & Uptime Diagnostics)"]
+    end
+
+    subgraph DatabaseLayer["🛢️ Cloud Database Layer"]
+        CloudDB["Cloud MySQL 8.0 / Managed PostgreSQL<br/><i>(Aiven / Railway / Supabase / AWS RDS)</i>"]
+    end
+
+    MobileApp -->|HTTPS API Requests| HTTPS
+    WebApp -->|HTTPS API Requests| HTTPS
+    HTTPS --> CORS
+    CORS --> JWT
+    JWT --> FastAPI
+    FastAPI --> AuthRouter
+    FastAPI --> SosRouter
+    FastAPI --> AiRouter
+    FastAPI --> HealthRouter
+    FastAPI -->|SQLAlchemy Connection Pool| CloudDB
+```
 
 ---
 
-## 🔄 End-to-End System Working Process
+## 🛠️ Local Development & Quick Start
 
-```
-┌─────────────────┐      ┌───────────────────────────┐      ┌─────────────────────────────┐
-│ 1. SOS Trigger  │ ───► │ 2. AI Risk Classification │ ───► │ 3. Real-Time Broadcast      │
-│ Resident or     │      │ FastAPI AI Agent assesses │      │ Broadcasts SOS to           │
-│ Sensor Anomaly  │      │ emergency urgency level   │      │ Responders, Neighbors &     │
-└─────────────────┘      └───────────────────────────┘      │ Guardians                   │
-                                                            └──────────────┬──────────────┘
-                                                                           │
-┌─────────────────┐      ┌───────────────────────────┐                     │
-│ 5. Audit & Logs │ ◄─── │ 4. On-Scene & Resolution  │ ◄───────────────────┘
-│ Logged in Admin │      │ Responder accepts, follows│
-│ Analytics Panel │      │ GPS map & marks Resolved  │
-└─────────────────┘      └───────────────────────────┘
-```
-
-### Detailed Operational Flow:
-1. **Emergency Triggering**: A resident presses the high-contrast SOS button on their mobile or web dashboard.
-2. **AI Classification**: The description is processed by the **FastAPI AI Agent** (`ai-agent/main.py`), categorizing risk severity (e.g., *Critical - Cardiac Risk*).
-3. **Multi-Channel Dispatch**: The backend broadcasts the alert to active **Security Responders**, **Volunteer Responders**, **Nearby Neighbors**, and the resident's **Family Guardian**.
-4. **Responder Acceptance & GPS Guidance**: A responder accepts the incident. The system locks the dispatch, generates turn-by-turn Leaflet/OSRM route navigation, and provides the responder with vital medical summaries.
-5. **Resolution & Executive Auditing**: Upon resolving the incident on-scene, status updates to `Resolved`. Detailed response metrics are archived in **Admin Analytics**.
-
----
-
-## 🏗️ Architecture & Tech Stack
-
-```
-CareConnect Platform
- ├── Frontend: React 19 + Vite + Lucide Icons + Leaflet Maps + Capacitor 8
- ├── Backend API: Python FastAPI + SQLite ORM + PyJWT Authentication
- └── AI Microservice: Python FastAPI + Automated Care Decision Engine
-```
-
----
-
-## 🚀 Quick Start Guide (Local Environment)
-
-### Prerequisites
-- **Node.js** (v18+ recommended)
-- **Python** (v3.10+ recommended)
-- **Git**
-
----
-
-### 1. Start Backend API Server
-
+### 1. Backend Service
 ```bash
 cd backend
-
-# Create virtual environment
 python -m venv venv
-
-# Activate virtual environment
 # Windows:
-venv\Scripts\activate
-# macOS/Linux:
-# source venv/bin/activate
+.\venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Seed test database (optional)
-python app/seed.py
-
-# Run FastAPI backend
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
-> Backend runs at `http://localhost:8000`. Swagger API docs available at `http://localhost:8000/docs`.
 
----
-
-### 2. Start AI Agent Service
-
-```bash
-cd ai-agent
-
-# Activate virtual environment & install requirements
-python -m venv venv
-venv\Scripts\activate
-pip install -r requirements.txt
-
-# Start AI Agent service
-python main.py
-```
-> AI Agent runs on port `http://localhost:8001`.
-
----
-
-### 3. Start Frontend App
-
+### 2. Frontend Web Application
 ```bash
 cd frontend
-
-# Install npm packages
 npm install
-
-# Start Vite development server
 npm run dev
 ```
-> Open your browser at `http://localhost:5173`.
 
----
-
-## 🔑 Demo Account Credentials
-
-| Role | Email | Password |
-| :--- | :--- | :--- |
-| **Admin / Director** | `admin@careconnect.org` | `admin123` |
-| **Resident (Ashish)** | `ashish@careconnect.org` | `resident123` |
-| **Resident (Eleanor)** | `eleanor@careconnect.org` | `resident123` |
-| **Guardian** | `guardian@careconnect.org` | `guardian123` |
-| **Security Responder** | `security@careconnect.org` | `security123` |
-
----
-
-## 📱 Mobile App Compilation (Capacitor)
-
-CareConnect compiles directly into native Android and iOS apps using Capacitor:
-
+### 3. Flutter Mobile Application
 ```bash
-cd frontend
-
-# Sync web assets to native mobile projects
-npm run cap:sync
-
-# Open in Android Studio
-npm run cap:open-android
-
-# Open in Xcode (macOS)
-npm run cap:open-ios
-```
-
----
-
-## 🧪 Automated Testing
-
-Run end-to-end API test suites:
-```bash
-cd backend
-python test_api.py
+cd ../CareConnect-Flutter
+flutter pub get
+flutter run
 ```
 
 ---
 
 ## 📄 License
-
-Distributed under the MIT License. See `LICENSE` for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

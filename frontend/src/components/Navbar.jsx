@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { HeartPulse, User, LogOut, Sparkles, Shield, Siren, Activity, Users, Phone, Film, Globe, ChevronDown, Settings } from 'lucide-react';
+import { HeartPulse, User, LogOut, Sparkles, Shield, Siren, Activity, Users, Phone, Globe, ChevronDown, Settings } from 'lucide-react';
 import LocationBar from './LocationBar';
 import { useLanguage, TRANSLATIONS } from '../context/LanguageContext';
 
-export default function Navbar({ user, activeView, onChangeView, onLogout, onToggleAI, onToggleIntro, onOpenSettings, showIntro }) {
+export default function Navbar({ user, activeView, onChangeView, onLogout, onToggleAI, onOpenSettings }) {
   const { lang, setLang, t } = useLanguage();
   const [showLangMenu, setShowLangMenu] = useState(false);
 
@@ -151,21 +151,6 @@ export default function Navbar({ user, activeView, onChangeView, onLogout, onTog
 
           {/* Live Location Access Badge */}
           <LocationBar />
-
-          <button 
-            className="btn btn-secondary" 
-            onClick={onToggleIntro}
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              borderColor: 'rgba(255, 255, 255, 0.15)',
-              color: '#f8fafc',
-              fontSize: '0.82rem'
-            }}
-            title="Return to Intro Landing Screen"
-          >
-            <Film size={16} />
-            <span className="nav-btn-text">{t('introPage')}</span>
-          </button>
 
           <button 
             className="btn btn-secondary" 
