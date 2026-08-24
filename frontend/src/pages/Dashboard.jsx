@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   ShieldCheck, 
@@ -18,8 +18,13 @@ import { api } from '../services/api';
 import SOSBanner from '../components/SOSBanner';
 import ResidentModal from '../components/ResidentModal';
 import RealisticMap from '../components/RealisticMap';
+import LoadingScreen from '../components/LoadingScreen';
 import { useLanguage } from '../context/LanguageContext';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { usePolling } from '../hooks/usePolling';
+import { indexById, matchesQuery } from '../utils/collections';
+import { alertError, logError } from '../utils/errors';
+import { resolveCoords, scatterOffset } from '../utils/location';
 
 export default function Dashboard({ user }) {
   const { t } = useLanguage();
@@ -50,29 +55,22 @@ export default function Dashboard({ user }) {
       setResidents(resList);
       setAlerts(incList);
     } catch (err) {
-      console.error("Failed to load caregiver dashboard data:", err);
+      logError("Failed to load caregiver dashboard data", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 3000);
-    return () => clearInterval(interval);
-  }, []);
+  usePolling(fetchData, 3000);
 
-  const residentsMap = residents.reduce((acc, r) => {
-    acc[r.id] = r;
-    return acc;
-  }, {});
+  const residentsMap = indexById(residents);
 
   const handleResolveAlert = async (alertId) => {
     try {
       await api.updateIncidentStatus(alertId, "Resolved");
       await fetchData();
     } catch (err) {
-      alert("Failed to resolve alert: " + err.message);
+      alertError("Failed to resolve alert", err);
     }
   };
 
@@ -87,7 +85,7 @@ export default function Dashboard({ user }) {
       setSelectedResident(null);
       await fetchData();
     } catch (err) {
-      alert("Error saving resident: " + err.message);
+      alertError("Error saving resident", err);
     }
   };
 
@@ -97,7 +95,7 @@ export default function Dashboard({ user }) {
         await api.deleteResident(id);
         await fetchData();
       } catch (err) {
-        alert("Failed to delete resident: " + err.message);
+        alertError("Failed to delete resident", err);
       }
     }
   };
@@ -118,16 +116,14 @@ export default function Dashboard({ user }) {
       setSosResidentId('');
       await fetchData();
     } catch (err) {
-      alert("Failed to trigger SOS: " + err.message);
+      alertError("Failed to trigger SOS", err);
     }
   };
 
   // Filtered residents
   const filteredResidents = residents.filter(r => {
     const matchesStatus = filterStatus === 'all' || r.status === filterStatus;
-    const matchesSearch = r.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          r.room_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (r.medical_notes && r.medical_notes.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = matchesQuery(searchQuery, r.full_name, r.room_number, r.medical_notes);
     return matchesStatus && matchesSearch;
   });
 
@@ -135,18 +131,16 @@ export default function Dashboard({ user }) {
   const alertCount = residents.filter(r => r.status === 'alert').length;
   const emergencyCount = residents.filter(r => r.status === 'emergency').length;
 
-  const baseLat = geo.lat || 28.6139;
-  const baseLng = geo.lng || 77.2090;
+  const { lat: baseLat, lng: baseLng } = resolveCoords(geo);
 
   // Build pins for all residents
   const residentMapMarkers = filteredResidents.map((res, idx) => {
-    const latOffset = (idx % 3 === 0 ? 0.003 : idx % 3 === 1 ? -0.004 : 0.002) * (idx + 1);
-    const lngOffset = (idx % 2 === 0 ? 0.004 : -0.003) * (idx + 1);
+    const offset = scatterOffset(idx, [0.003, -0.004, 0.002], [0.004, -0.003]);
 
     return {
       id: res.id,
-      lat: baseLat + latOffset,
-      lng: baseLng + lngOffset,
+      lat: baseLat + offset.lat,
+      lng: baseLng + offset.lng,
       title: `${res.full_name} (Room ${res.room_number})`,
       description: `Age ${res.age} • Contact: ${res.emergency_contact}`,
       status: res.status.toUpperCase(),
@@ -328,7 +322,7 @@ export default function Dashboard({ user }) {
         ) : (
           /* Resident Roster Cards Grid */
           loading ? (
-            <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading resident roster...</div>
+            <LoadingScreen message="Loading resident roster..." />
           ) : filteredResidents.length === 0 ? (
             <div className="glass-card" style={{ textAlign: 'center', padding: '60px' }}>
               <p style={{ color: '#94a3b8', margin: 0 }}>No residents found matching criteria.</p>

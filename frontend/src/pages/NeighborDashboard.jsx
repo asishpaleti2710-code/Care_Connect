@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   HeartHandshake, 
   ShieldAlert, 
@@ -15,7 +15,13 @@ import {
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import RealisticMap from '../components/RealisticMap';
+import LoadingScreen from '../components/LoadingScreen';
 import { useLanguage } from '../context/LanguageContext';
+import { usePolling } from '../hooks/usePolling';
+import { indexById } from '../utils/collections';
+import { alertError, logError } from '../utils/errors';
+import { resolveCoords } from '../utils/location';
+import { incidentBadgeClass } from '../utils/status';
 
 export default function NeighborDashboard({ user }) {
   const { t } = useLanguage();
@@ -33,23 +39,15 @@ export default function NeighborDashboard({ user }) {
         api.getResidents()
       ]);
       setIncidents(incList);
-      const rMap = resList.reduce((acc, r) => {
-        acc[r.id] = r;
-        return acc;
-      }, {});
-      setResidentsMap(rMap);
+      setResidentsMap(indexById(resList));
     } catch (err) {
-      console.error("Error loading neighbor emergency feed:", err);
+      logError("Error loading neighbor emergency feed", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-    const timer = setInterval(loadData, 5000);
-    return () => clearInterval(timer);
-  }, []);
+  usePolling(loadData, 5000);
 
   const handleNeighborRespond = async (incidentId) => {
     setRespondingId(incidentId);
@@ -57,16 +55,16 @@ export default function NeighborDashboard({ user }) {
       await api.updateIncidentStatus(incidentId, 'Accepted', user.full_name, 'Community Neighbor Responder');
       await loadData();
     } catch (err) {
-      alert("Error offering neighbor help: " + err.message);
+      alertError("Error offering neighbor help", err);
     } finally {
       setRespondingId(null);
     }
   };
 
   const activeNeighborhoodAlerts = incidents.filter(i => i.status !== 'Resolved');
+  const neighborCoords = resolveCoords(geo);
   const neighborOrigin = {
-    lat: geo.lat || 28.6139,
-    lng: geo.lng || 77.2090,
+    ...neighborCoords,
     title: `${user.full_name} (Neighbor #304)`,
     address: geo.address || 'Neighbor Local Apartment #304'
   };
@@ -74,8 +72,8 @@ export default function NeighborDashboard({ user }) {
   const mapMarkers = activeNeighborhoodAlerts.map(inc => {
     const res = residentsMap[inc.resident_id];
     return {
-      lat: (geo.lat || 28.6139) + (Math.random() * 0.003 - 0.0015),
-      lng: (geo.lng || 77.2090) + (Math.random() * 0.003 - 0.0015),
+      lat: neighborCoords.lat + (Math.random() * 0.003 - 0.0015),
+      lng: neighborCoords.lng + (Math.random() * 0.003 - 0.0015),
       title: res ? `SOS: ${res.full_name}` : inc.incident_code,
       description: `Emergency: ${inc.description}`,
       type: 'sos',
@@ -83,7 +81,7 @@ export default function NeighborDashboard({ user }) {
     };
   });
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading Neighbor Emergency Network...</div>;
+  if (loading) return <LoadingScreen message="Loading Neighbor Emergency Network..." />;
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '28px 24px' }}>
@@ -157,7 +155,7 @@ export default function NeighborDashboard({ user }) {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
                         <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#f8fafc' }}>{inc.incident_code}</span>
-                        <span className={`badge badge-${inc.status === 'Resolved' ? 'safe' : inc.status === 'Pending' ? 'emergency' : 'alert'}`}>
+                        <span className={incidentBadgeClass(inc.status)}>
                           {inc.status}
                         </span>
                         <span style={{ fontSize: '0.78rem', color: '#14b8a6', background: 'rgba(20, 184, 166, 0.15)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>

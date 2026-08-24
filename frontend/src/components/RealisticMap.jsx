@@ -18,6 +18,7 @@ import {
   X
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { DEFAULT_CENTER } from '../utils/location';
 
 // Modal Portal Component for Full Screen Expanded Map
 function ExpandedMapModal({ center, zoom, origin, destination, markers, selectable, onLocationSelect, activeLayer: initialLayer, onClose, t, title }) {
@@ -394,7 +395,7 @@ const createCustomIcon = (type = 'user', label = '') => {
 };
 
 export default function RealisticMap({
-  center = [28.6139, 77.2090], // Default center
+  center = DEFAULT_CENTER,
   zoom = 14,
   origin = null,
   destination = null,

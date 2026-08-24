@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, UserPlus, Save, AlertCircle, MapPin, Compass } from 'lucide-react';
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
+import { riskBadgeClass } from '../utils/status';
 
 export default function ResidentModal({ isOpen, onClose, onSave, resident = null }) {
   const geo = useGeolocation();
@@ -258,7 +259,7 @@ export default function ResidentModal({ isOpen, onClose, onSave, resident = null
                 <strong style={{ color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Sparkles size={14} /> AI Health Assessment
                 </strong>
-                <span className={`badge badge-${aiAnalysis.risk_level === 'High' ? 'emergency' : aiAnalysis.risk_level === 'Moderate' ? 'alert' : 'safe'}`}>
+                <span className={riskBadgeClass(aiAnalysis.risk_level)}>
                   {aiAnalysis.risk_level} Risk ({aiAnalysis.risk_score}%)
                 </span>
               </div>

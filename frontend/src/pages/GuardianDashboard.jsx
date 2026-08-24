@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, Siren, PhoneCall, Heart, Clock, MapPin } from 'lucide-react';
 import { api } from '../services/api';
+import LoadingScreen from '../components/LoadingScreen';
+import { usePolling } from '../hooks/usePolling';
+import { logError } from '../utils/errors';
+import { findLinkedResident } from '../utils/residents';
+import { incidentBadgeClass, residentStatusColor } from '../utils/status';
 
 export default function GuardianDashboard({ user }) {
   const [resident, setResident] = useState(null);
@@ -11,8 +16,7 @@ export default function GuardianDashboard({ user }) {
     try {
       const resList = await api.getResidents();
       // Find Eleanor Vance or first resident linked to guardian demo
-      let res = resList.find(r => r.full_name === "Ashish" || r.full_name === "Eleanor Vance");
-      if (!res && resList.length > 0) res = resList[0];
+      const res = findLinkedResident(resList, r => r.full_name === "Ashish" || r.full_name === "Eleanor Vance");
 
       setResident(res);
 
@@ -21,19 +25,15 @@ export default function GuardianDashboard({ user }) {
         setIncidents(incList.filter(i => i.resident_id === res.id));
       }
     } catch (err) {
-      console.error("Error loading guardian data:", err);
+      logError("Error loading guardian data", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  usePolling(loadData, 5000);
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading Guardian Portal...</div>;
+  if (loading) return <LoadingScreen message="Loading Guardian Portal..." />;
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
@@ -52,7 +52,7 @@ export default function GuardianDashboard({ user }) {
 
       {/* Linked Resident Card */}
       {resident ? (
-        <div className="glass-card" style={{ padding: '28px', marginBottom: '32px', borderLeft: `6px solid ${resident.status === 'emergency' ? '#ef4444' : resident.status === 'alert' ? '#f59e0b' : '#10b981'}` }}>
+        <div className="glass-card" style={{ padding: '28px', marginBottom: '32px', borderLeft: `6px solid ${residentStatusColor(resident.status)}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
@@ -100,7 +100,7 @@ export default function GuardianDashboard({ user }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <strong style={{ color: '#f8fafc' }}>{inc.incident_code}</strong>
-                    <span className={`badge badge-${inc.status === 'Resolved' ? 'safe' : inc.status === 'Pending' ? 'emergency' : 'alert'}`}>
+                    <span className={incidentBadgeClass(inc.status)}>
                       {inc.status}
                     </span>
                     <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>• {inc.emergency_type} ({inc.priority} Priority)</span>
