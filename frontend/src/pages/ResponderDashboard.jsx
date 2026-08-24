@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Siren, 
   Shield, 
@@ -17,7 +17,13 @@ import {
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import RealisticMap from '../components/RealisticMap';
+import LoadingScreen from '../components/LoadingScreen';
 import { useLanguage } from '../context/LanguageContext';
+import { usePolling } from '../hooks/usePolling';
+import { indexById } from '../utils/collections';
+import { alertError, logError } from '../utils/errors';
+import { resolveCoords, scatterOffset } from '../utils/location';
+import { incidentBadgeClass } from '../utils/status';
 
 export default function ResponderDashboard({ user }) {
   const { t } = useLanguage();
@@ -34,8 +40,7 @@ export default function ResponderDashboard({ user }) {
 
   // Responder fallback origin if browser location is pending
   const responderOrigin = {
-    lat: geo.lat || 28.6139,
-    lng: geo.lng || 77.2090,
+    ...resolveCoords(geo),
     title: `Responder ${user.full_name}`,
     address: geo.address || 'Responder Current GPS Position'
   };
@@ -48,31 +53,22 @@ export default function ResponderDashboard({ user }) {
       ]);
 
       setIncidents(incList);
-
-      const rMap = resList.reduce((acc, r) => {
-        acc[r.id] = r;
-        return acc;
-      }, {});
-      setResidentsMap(rMap);
+      setResidentsMap(indexById(resList));
     } catch (err) {
-      console.error("Error loading responder dashboard data:", err);
+      logError("Error loading responder dashboard data", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadIncidents();
-    const interval = setInterval(loadIncidents, 4000);
-    return () => clearInterval(interval);
-  }, []);
+  usePolling(loadIncidents, 4000);
 
   const handleAcceptIncident = async (id) => {
     try {
       await api.acceptIncident(id);
       await loadIncidents();
     } catch (err) {
-      alert("Failed to accept incident: " + err.message);
+      alertError("Failed to accept incident", err);
     }
   };
 
@@ -81,7 +77,7 @@ export default function ResponderDashboard({ user }) {
       await api.updateIncidentStatus(id, status);
       await loadIncidents();
     } catch (err) {
-      alert("Failed to update status: " + err.message);
+      alertError("Failed to update status", err);
     }
   };
 
@@ -122,13 +118,12 @@ export default function ResponderDashboard({ user }) {
     const isMine = inc.responder_id === user.id;
 
     // Distribute markers slightly if no exact geocode yet
-    const latOffset = (idx % 3 === 0 ? 0.004 : idx % 3 === 1 ? -0.005 : 0.003) * (idx + 1);
-    const lngOffset = (idx % 2 === 0 ? 0.005 : -0.004) * (idx + 1);
+    const offset = scatterOffset(idx, [0.004, -0.005, 0.003], [0.005, -0.004]);
 
     return {
       id: inc.id,
-      lat: responderOrigin.lat + latOffset,
-      lng: responderOrigin.lng + lngOffset,
+      lat: responderOrigin.lat + offset.lat,
+      lng: responderOrigin.lng + offset.lng,
       title: `${inc.incident_code}: ${res?.full_name || 'Resident'}`,
       description: `[${inc.priority} PRIORITY] ${inc.description || 'Emergency SOS call'}`,
       status: inc.status,
@@ -136,7 +131,7 @@ export default function ResponderDashboard({ user }) {
     };
   });
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading Emergency Dispatch Feed...</div>;
+  if (loading) return <LoadingScreen message="Loading Emergency Dispatch Feed..." />;
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
@@ -260,7 +255,7 @@ export default function ResponderDashboard({ user }) {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                       <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc' }}>{inc.incident_code}</span>
-                      <span className={`badge badge-${inc.status === 'Resolved' ? 'safe' : inc.status === 'Pending' ? 'emergency' : 'alert'}`}>
+                      <span className={incidentBadgeClass(inc.status)}>
                         {inc.status}
                       </span>
                       <span style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>

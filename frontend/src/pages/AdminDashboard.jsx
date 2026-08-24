@@ -1,6 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Users, Siren, ShieldCheck, PieChart, FileText, CheckCircle2, Clock, Activity, Filter, Search, Check, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
+import LoadingScreen from '../components/LoadingScreen';
+import { usePolling } from '../hooks/usePolling';
+import { matchesQuery } from '../utils/collections';
+import { alertError, logError } from '../utils/errors';
+import { IN_PROGRESS_INCIDENT_STATUSES, incidentBadgeClass } from '../utils/status';
 
 export default function AdminDashboard({ user }) {
   const [analytics, setAnalytics] = useState(null);
@@ -25,25 +30,21 @@ export default function AdminDashboard({ user }) {
       setResidents(resList);
       setIncidents(incList);
     } catch (err) {
-      console.error("Error loading admin analytics:", err);
+      logError("Error loading admin analytics", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadAdminData();
-    // High-frequency 2-second polling for real-time accuracy
-    const interval = setInterval(loadAdminData, 2000);
-    return () => clearInterval(interval);
-  }, []);
+  // High-frequency 2-second polling for real-time accuracy
+  usePolling(loadAdminData, 2000);
 
   const handleResolveIncident = async (id) => {
     try {
       await api.updateIncidentStatus(id, "Resolved");
       await loadAdminData();
     } catch (err) {
-      alert("Error resolving incident: " + err.message);
+      alertError("Error resolving incident", err);
     }
   };
 
@@ -52,7 +53,7 @@ export default function AdminDashboard({ user }) {
       await api.acceptIncident(id);
       await loadAdminData();
     } catch (err) {
-      alert("Error accepting incident: " + err.message);
+      alertError("Error accepting incident", err);
     }
   };
 
@@ -61,16 +62,13 @@ export default function AdminDashboard({ user }) {
     const matchesStatus = 
       incidentFilter === 'all' ? true :
       incidentFilter === 'pending' ? inc.status === 'Pending' :
-      incidentFilter === 'active' ? (inc.status === 'Accepted' || inc.status === 'In Progress') :
+      incidentFilter === 'active' ? IN_PROGRESS_INCIDENT_STATUSES.includes(inc.status) :
       incidentFilter === 'resolved' ? inc.status === 'Resolved' : true;
 
     const matchesCategory = 
       categoryFilter === 'all' ? true : inc.emergency_type === categoryFilter;
 
-    const matchesSearch = 
-      inc.incident_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (inc.description && inc.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (inc.location && inc.location.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesSearch = matchesQuery(searchQuery, inc.incident_code, inc.description, inc.location);
 
     return matchesStatus && matchesCategory && matchesSearch;
   });
@@ -83,14 +81,12 @@ export default function AdminDashboard({ user }) {
       userRoleFilter === 'emergency' ? r.status === 'emergency' :
       userRoleFilter === 'alert' ? r.status === 'alert' : true;
 
-    const matchesSearch = 
-      r.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.room_number.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = matchesQuery(searchQuery, r.full_name, r.room_number);
 
     return matchesRole && matchesSearch;
   });
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading Admin Real-Time Center...</div>;
+  if (loading) return <LoadingScreen message="Loading Admin Real-Time Center..." />;
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
@@ -265,7 +261,7 @@ export default function AdminDashboard({ user }) {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <strong style={{ color: '#f8fafc', fontSize: '0.95rem' }}>{inc.incident_code}</strong>
-                      <span className={`badge badge-${inc.status === 'Resolved' ? 'safe' : inc.status === 'Pending' ? 'emergency' : 'alert'}`}>
+                      <span className={incidentBadgeClass(inc.status)}>
                         {inc.status}
                       </span>
                       <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>• {inc.emergency_type}</span>

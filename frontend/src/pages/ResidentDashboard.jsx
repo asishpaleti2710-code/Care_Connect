@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Siren,
   Heart,
@@ -19,8 +19,14 @@ import {
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import RealisticMap from '../components/RealisticMap';
+import LoadingScreen from '../components/LoadingScreen';
 import { useLanguage } from '../context/LanguageContext';
 import SensorTelemetryWidget from '../components/SensorTelemetryWidget';
+import { usePolling } from '../hooks/usePolling';
+import { alertError, logError } from '../utils/errors';
+import { resolveCoords } from '../utils/location';
+import { findLinkedResident } from '../utils/residents';
+import { incidentBadgeClass } from '../utils/status';
 
 export default function ResidentDashboard({ user }) {
   const { t } = useLanguage();
@@ -48,8 +54,7 @@ export default function ResidentDashboard({ user }) {
   const loadData = async () => {
     try {
       const residents = await api.getResidents();
-      let res = residents.find(r => r.user_id === user.id || r.full_name === user.full_name);
-      if (!res && residents.length > 0) res = residents[0];
+      const res = findLinkedResident(residents, r => r.user_id === user.id || r.full_name === user.full_name);
 
       setResident(res);
 
@@ -62,17 +67,13 @@ export default function ResidentDashboard({ user }) {
         setIncidents(incList.filter(i => i.resident_id === res.id));
       }
     } catch (err) {
-      console.error("Error loading resident data:", err);
+      logError("Error loading resident data", err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadData();
-    const timer = setInterval(loadData, 5000);
-    return () => clearInterval(timer);
-  }, [user]);
+  usePolling(loadData, 5000, [user]);
 
   const handleAIClassify = async () => {
     if (!emergencyText.trim()) return;
@@ -80,7 +81,7 @@ export default function ResidentDashboard({ user }) {
       const classified = await api.classifyEmergency(emergencyText);
       setAiClassification(classified);
     } catch (err) {
-      console.error("AI classification error:", err);
+      logError("AI classification error", err);
     }
   };
 
@@ -136,7 +137,7 @@ export default function ResidentDashboard({ user }) {
       setTimeout(() => setSosSuccessMsg(''), 6000);
       await loadData();
     } catch (err) {
-      alert("Error triggering SOS: " + err.message);
+      alertError("Error triggering SOS", err);
     } finally {
       setIsTriggering(false);
     }
@@ -154,7 +155,7 @@ export default function ResidentDashboard({ user }) {
       setIsGuardianModalOpen(false);
       await loadData();
     } catch (err) {
-      alert("Error adding guardian: " + err.message);
+      alertError("Error adding guardian", err);
     }
   };
 
@@ -163,14 +164,13 @@ export default function ResidentDashboard({ user }) {
       await api.deleteGuardian(id);
       await loadData();
     } catch (err) {
-      alert("Error removing guardian: " + err.message);
+      alertError("Error removing guardian", err);
     }
   };
 
-  const currentLat = selectedLocation?.lat || geo.lat || 28.6139;
-  const currentLng = selectedLocation?.lng || geo.lng || 77.2090;
+  const { lat: currentLat, lng: currentLng } = resolveCoords(selectedLocation, geo);
 
-  if (loading) return <div style={{ textAlign: 'center', padding: '60px', color: '#94a3b8' }}>Loading Resident Portal...</div>;
+  if (loading) return <LoadingScreen message="Loading Resident Portal..." />;
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '28px 24px' }}>
@@ -419,7 +419,7 @@ export default function ResidentDashboard({ user }) {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <strong style={{ color: '#f8fafc' }}>{inc.incident_code}</strong>
-                    <span className={`badge badge-${inc.status === 'Resolved' ? 'safe' : inc.status === 'Pending' ? 'emergency' : 'alert'}`}>
+                    <span className={incidentBadgeClass(inc.status)}>
                       {inc.status}
                     </span>
                     <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>• {inc.emergency_type}</span>
