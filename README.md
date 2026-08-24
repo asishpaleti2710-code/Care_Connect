@@ -90,6 +90,11 @@ CareConnect Platform
 ```bash
 cd backend
 
+# Create local secrets file (never committed)
+cp .env.example .env
+# Generate a SECRET_KEY value for .env:
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+
 # Create virtual environment
 python -m venv venv
 
@@ -116,6 +121,9 @@ uvicorn app.main:app --reload --port 8000
 
 ```bash
 cd ai-agent
+
+# The AI service validates CareConnect access tokens, so it needs the same SECRET_KEY
+cp .env.example .env
 
 # Activate virtual environment & install requirements
 python -m venv venv
@@ -184,6 +192,23 @@ python test_api.py
 ```
 
 ---
+
+## 🔐 Security Configuration
+
+| Variable | Service | Notes |
+| :--- | :--- | :--- |
+| `SECRET_KEY` | backend, ai-agent | JWT signing/validation key. Must be identical in both services and is **required** when `ENVIRONMENT=production`. |
+| `ENVIRONMENT` | backend, ai-agent | `development` (default) or `production`. |
+| `CORS_ORIGINS` | backend, ai-agent | Comma-separated allowlist of browser origins. Wildcards are not used. |
+| `ENABLE_DOCS` | backend | Exposes `/docs`, `/redoc`, `/openapi.json`. Defaults to off in production. |
+| `AI_AGENT_REQUIRE_AUTH` | ai-agent | Defaults to `true`; AI endpoints require a valid access token. |
+
+Other security behaviour worth knowing:
+
+- Self-service registration can only create `resident`, `guardian` and `neighbour` accounts. Staff and responder roles (`admin`, `caregiver`, `security`, `volunteer`) must be provisioned directly.
+- Residents may only raise SOS alerts/incidents for their own linked resident record.
+- Resident record writes are limited to `admin`/`caregiver`; incident dispatch actions to responder roles; analytics to `admin`.
+- Passwords must be at least 8 characters.
 
 ## 📄 License
 

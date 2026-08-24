@@ -12,7 +12,12 @@ from app.routers import auth, residents, sos, guardians, incidents
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title=settings.PROJECT_NAME)
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    docs_url="/docs" if settings.ENABLE_DOCS else None,
+    redoc_url="/redoc" if settings.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if settings.ENABLE_DOCS else None,
+)
 
 @app.on_event("startup")
 def startup_event():
@@ -36,10 +41,10 @@ def startup_event():
 # Enable CORS for frontend integration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Include Routers
@@ -54,7 +59,7 @@ def home():
     return {
         "message": "CareConnect Portfolio Emergency API is running",
         "version": "2.0.0",
-        "docs": "/docs"
+        "docs": "/docs" if settings.ENABLE_DOCS else None
     }
 
 @app.get("/health")

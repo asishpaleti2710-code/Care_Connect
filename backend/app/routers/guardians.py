@@ -3,9 +3,13 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.models.guardian import Guardian
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.guardian import GuardianCreate, GuardianResponse
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, require_roles
+
+require_guardian_manager = require_roles(
+    UserRole.ADMIN.value, UserRole.CAREGIVER.value, UserRole.RESIDENT.value
+)
 
 router = APIRouter(prefix="/api/guardians", tags=["Guardians"])
 
@@ -21,7 +25,7 @@ def get_resident_guardians(
 def add_guardian(
     guardian_in: GuardianCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_guardian_manager)
 ):
     new_guardian = Guardian(
         resident_id=guardian_in.resident_id,
@@ -39,7 +43,7 @@ def add_guardian(
 def remove_guardian(
     guardian_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_guardian_manager)
 ):
     g = db.query(Guardian).filter(Guardian.id == guardian_id).first()
     if not g:

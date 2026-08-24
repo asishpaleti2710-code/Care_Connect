@@ -1,24 +1,24 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
 from datetime import datetime
 
 class ResidentBase(BaseModel):
-    full_name: str
-    age: int
-    room_number: str
-    medical_notes: Optional[str] = None
-    emergency_contact: str
+    full_name: str = Field(min_length=1, max_length=120)
+    age: int = Field(ge=0, le=130)
+    room_number: str = Field(min_length=1, max_length=30)
+    medical_notes: Optional[str] = Field(default=None, max_length=5000)
+    emergency_contact: str = Field(min_length=1, max_length=40)
 
 class ResidentCreate(ResidentBase):
     pass
 
 class ResidentUpdate(BaseModel):
-    full_name: Optional[str] = None
-    age: Optional[int] = None
-    room_number: Optional[str] = None
-    medical_notes: Optional[str] = None
-    emergency_contact: Optional[str] = None
-    status: Optional[str] = None
+    full_name: Optional[str] = Field(default=None, min_length=1, max_length=120)
+    age: Optional[int] = Field(default=None, ge=0, le=130)
+    room_number: Optional[str] = Field(default=None, min_length=1, max_length=30)
+    medical_notes: Optional[str] = Field(default=None, max_length=5000)
+    emergency_contact: Optional[str] = Field(default=None, min_length=1, max_length=40)
+    status: Optional[Literal["safe", "alert", "emergency"]] = None
 
 class ResidentResponse(ResidentBase):
     id: int

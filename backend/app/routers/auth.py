@@ -1,9 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, UserProfileUpdate, ChangePasswordRequest
-from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.services.auth import (
+    SELF_SERVICE_ROLES,
+    hash_password,
+    verify_password,
+    create_access_token,
+    get_current_user,
+)
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -16,11 +22,21 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
+    requested_role = user_data.role or UserRole.RESIDENT.value
+    if requested_role not in SELF_SERVICE_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Role cannot be self-assigned. Allowed roles: "
+                + ", ".join(sorted(SELF_SERVICE_ROLES))
+            ),
+        )
+
     new_user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
         full_name=user_data.full_name,
-        role=user_data.role or "caregiver"
+        role=requested_role
     )
     db.add(new_user)
     db.commit()

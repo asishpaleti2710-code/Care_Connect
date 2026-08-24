@@ -164,8 +164,8 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
       setPasswordMsg({ type: 'error', text: 'New passwords do not match' });
       return;
     }
-    if (passwordForm.newPassword.length < 6) {
-      setPasswordMsg({ type: 'error', text: 'Password must be at least 6 characters' });
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordMsg({ type: 'error', text: 'Password must be at least 8 characters' });
       return;
     }
 
