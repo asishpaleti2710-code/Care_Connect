@@ -83,7 +83,9 @@ function ExpandedMapModal({ center, zoom, origin, destination, markers, selectab
             onLocationSelect({ lat, lng, address: data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}` });
             return;
           }
-        } catch (err) {}
+        } catch (err) {
+          console.warn("Reverse geocoding failed, falling back to raw coordinates:", err);
+        }
         onLocationSelect({ lat, lng, address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` });
       }
     });
@@ -168,9 +170,13 @@ function ExpandedMapModal({ center, zoom, origin, destination, markers, selectab
           if (selectable && onLocationSelect) {
             onLocationSelect({ lat, lng, address: data[0].display_name });
           }
+        } else {
+          alert('Location not found. Try entering a city or landmark name.');
         }
       }
-    } catch (err) {} finally {
+    } catch (err) {
+      alert('Error searching location: ' + err.message);
+    } finally {
       setSearching(false);
     }
   };
@@ -466,7 +472,9 @@ export default function RealisticMap({
               });
               return;
             }
-          } catch (err) {}
+          } catch (err) {
+            console.warn("Reverse geocoding failed, falling back to raw coordinates:", err);
+          }
           onLocationSelect({ lat, lng, address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}` });
         }
       });
@@ -683,9 +691,11 @@ export default function RealisticMap({
         } else {
           alert('Location not found. Try entering a city or landmark name.');
         }
+      } else {
+        alert(`Location search failed (status ${res.status}). Please try again.`);
       }
     } catch (err) {
-      alert('Error searching location.');
+      alert('Error searching location: ' + err.message);
     } finally {
       setSearching(false);
     }

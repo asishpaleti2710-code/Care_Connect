@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Siren, PhoneCall, Heart, Clock, MapPin } from 'lucide-react';
 import { api } from '../services/api';
+import LoadErrorBanner from '../components/LoadErrorBanner';
 
 export default function GuardianDashboard({ user }) {
   const [resident, setResident] = useState(null);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   const loadData = async () => {
     try {
@@ -20,8 +22,10 @@ export default function GuardianDashboard({ user }) {
         const incList = await api.getIncidents();
         setIncidents(incList.filter(i => i.resident_id === res.id));
       }
+      setLoadError(null);
     } catch (err) {
       console.error("Error loading guardian data:", err);
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -37,6 +41,8 @@ export default function GuardianDashboard({ user }) {
 
   return (
     <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
+
+      <LoadErrorBanner message={loadError} onRetry={loadData} />
       
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>

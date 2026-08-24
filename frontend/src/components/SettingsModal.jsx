@@ -98,7 +98,8 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
     if (activeTab === 'activities') {
       api.getActivities()
         .then(data => setActivities(data))
-        .catch(() => {
+        .catch((err) => {
+          console.warn("Failed to load account activities from server, showing sample data:", err);
           setActivities([
             { id: 1, action: 'Profile Updated', timestamp: '2026-08-01 16:50:00', details: 'Updated height, location and bio' },
             { id: 2, action: 'Portal Login', timestamp: '2026-08-01 16:15:00', details: 'Authenticated via CareConnect Portal' },
@@ -148,10 +149,11 @@ export default function SettingsModal({ isOpen, onClose, user, onUpdateUser, onL
       setProfileSuccessMsg('Profile saved successfully!');
       setTimeout(() => setProfileSuccessMsg(''), 3000);
     } catch (err) {
+      console.error("Profile save failed on server:", err);
       // Local state fallback if backend update unattached
       if (onUpdateUser) onUpdateUser({ ...user, ...profileForm });
-      setProfileSuccessMsg('Profile updated in active session!');
-      setTimeout(() => setProfileSuccessMsg(''), 3000);
+      setProfileSuccessMsg('Server save failed — profile updated for this session only');
+      setTimeout(() => setProfileSuccessMsg(''), 5000);
     } finally {
       setSavingProfile(false);
     }

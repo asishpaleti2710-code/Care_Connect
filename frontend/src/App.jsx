@@ -43,7 +43,8 @@ function AppContent() {
           setUser(u);
           setActiveView(getViewForRole(u.role));
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error("Session restore failed, clearing stored token:", err);
           localStorage.removeItem('careconnect_token');
           setUser(null);
         })

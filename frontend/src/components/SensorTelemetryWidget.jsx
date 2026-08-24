@@ -26,11 +26,19 @@ export default function SensorTelemetryWidget({ onSimulateEmergency }) {
     setBpm(132);
 
     if (onSimulateEmergency) {
-      await onSimulateEmergency({
-        type: 'Fall Incident',
-        priority: 'High',
-        description: 'AUTOMATED IOT SENSOR ALERT: Sudden acceleration drop detected by CareConnect Smart Wristband #772. Resident may be unresponsive.'
-      });
+      try {
+        await onSimulateEmergency({
+          type: 'Fall Incident',
+          priority: 'High',
+          description: 'AUTOMATED IOT SENSOR ALERT: Sudden acceleration drop detected by CareConnect Smart Wristband #772. Resident may be unresponsive.'
+        });
+      } catch (err) {
+        alert('Failed to dispatch fall alert: ' + err.message);
+        setMotionStatus('Active / Stable');
+        setBpm(74);
+        setIsSimulating(false);
+        return;
+      }
     }
 
     setTimeout(() => {
@@ -46,11 +54,19 @@ export default function SensorTelemetryWidget({ onSimulateEmergency }) {
     setMotionStatus('⚠️ Cardiac Anomaly / High Heart Rate');
 
     if (onSimulateEmergency) {
-      await onSimulateEmergency({
-        type: 'Cardiac Anomaly',
-        priority: 'Critical',
-        description: 'AUTOMATED IOT SENSOR ALERT: Sustained pulse rate spike (168 BPM) detected by CareConnect Smart Wristband #772.'
-      });
+      try {
+        await onSimulateEmergency({
+          type: 'Cardiac Anomaly',
+          priority: 'Critical',
+          description: 'AUTOMATED IOT SENSOR ALERT: Sustained pulse rate spike (168 BPM) detected by CareConnect Smart Wristband #772.'
+        });
+      } catch (err) {
+        alert('Failed to dispatch cardiac alert: ' + err.message);
+        setMotionStatus('Active / Stable');
+        setBpm(74);
+        setIsSimulating(false);
+        return;
+      }
     }
 
     setTimeout(() => {

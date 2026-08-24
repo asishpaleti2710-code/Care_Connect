@@ -19,6 +19,7 @@ import {
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import RealisticMap from '../components/RealisticMap';
+import LoadErrorBanner from '../components/LoadErrorBanner';
 import { useLanguage } from '../context/LanguageContext';
 import SensorTelemetryWidget from '../components/SensorTelemetryWidget';
 
@@ -28,6 +29,7 @@ export default function ResidentDashboard({ user }) {
   const [guardians, setGuardians] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   // Geolocation hook
   const geo = useGeolocation();
@@ -61,8 +63,10 @@ export default function ResidentDashboard({ user }) {
         setGuardians(gList);
         setIncidents(incList.filter(i => i.resident_id === res.id));
       }
+      setLoadError(null);
     } catch (err) {
       console.error("Error loading resident data:", err);
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -81,6 +85,7 @@ export default function ResidentDashboard({ user }) {
       setAiClassification(classified);
     } catch (err) {
       console.error("AI classification error:", err);
+      alert("AI classification failed: " + err.message);
     }
   };
 
@@ -174,6 +179,8 @@ export default function ResidentDashboard({ user }) {
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '28px 24px' }}>
+
+      <LoadErrorBanner message={loadError} onRetry={loadData} />
 
       {/* Welcome Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
