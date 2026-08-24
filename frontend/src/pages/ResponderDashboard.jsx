@@ -17,6 +17,7 @@ import {
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import RealisticMap from '../components/RealisticMap';
+import LoadErrorBanner from '../components/LoadErrorBanner';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function ResponderDashboard({ user }) {
@@ -24,6 +25,7 @@ export default function ResponderDashboard({ user }) {
   const [incidents, setIncidents] = useState([]);
   const [residentsMap, setResidentsMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [activeTab, setActiveTab] = useState('pending'); // 'pending', 'assigned', 'all', 'map'
   
   // Navigation Modal state for specific incident
@@ -54,8 +56,10 @@ export default function ResponderDashboard({ user }) {
         return acc;
       }, {});
       setResidentsMap(rMap);
+      setLoadError(null);
     } catch (err) {
       console.error("Error loading responder dashboard data:", err);
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -140,6 +144,8 @@ export default function ResponderDashboard({ user }) {
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+
+      <LoadErrorBanner message={loadError} onRetry={loadIncidents} />
       
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>

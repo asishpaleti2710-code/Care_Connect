@@ -18,6 +18,7 @@ import { api } from '../services/api';
 import SOSBanner from '../components/SOSBanner';
 import ResidentModal from '../components/ResidentModal';
 import RealisticMap from '../components/RealisticMap';
+import LoadErrorBanner from '../components/LoadErrorBanner';
 import { useLanguage } from '../context/LanguageContext';
 import { useGeolocation } from '../hooks/useGeolocation';
 
@@ -26,6 +27,7 @@ export default function Dashboard({ user }) {
   const [residents, setResidents] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'map'
@@ -49,8 +51,10 @@ export default function Dashboard({ user }) {
       ]);
       setResidents(resList);
       setAlerts(incList);
+      setLoadError(null);
     } catch (err) {
       console.error("Failed to load caregiver dashboard data:", err);
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -160,6 +164,8 @@ export default function Dashboard({ user }) {
       <SOSBanner alerts={alerts} residentsMap={residentsMap} onResolve={handleResolveAlert} />
 
       <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+
+        <LoadErrorBanner message={loadError} onRetry={fetchData} />
         
         {/* Top Header & Quick Actions */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>

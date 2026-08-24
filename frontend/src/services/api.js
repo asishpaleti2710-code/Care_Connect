@@ -3,6 +3,18 @@ const sanitizeUrl = (url) => (url ? url.replace(/\/+$/, "") : "");
 const BACKEND_URL = sanitizeUrl(import.meta.env.VITE_API_URL || "");
 const AI_AGENT_URL = sanitizeUrl(import.meta.env.VITE_AI_URL || BACKEND_URL);
 
+function extractErrorMessage(data, response) {
+  const detail = data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((d) => (typeof d === "string" ? d : d.msg || JSON.stringify(d)))
+      .join("; ");
+  }
+  if (detail) return JSON.stringify(detail);
+  return `Request failed with status ${response.status}`;
+}
+
 async function request(endpoint, options = {}, isAI = false) {
   const baseUrl = isAI ? AI_AGENT_URL : BACKEND_URL;
   const token = localStorage.getItem("careconnect_token");
@@ -16,19 +28,36 @@ async function request(endpoint, options = {}, isAI = false) {
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${baseUrl}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (err) {
+    throw new Error(
+      `Unable to reach the ${isAI ? "AI agent" : "backend"} server (${err.message})`
+    );
+  }
 
   if (response.status === 204) {
     return null;
   }
 
-  const data = await response.json().catch(() => ({}));
+  const text = await response.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (err) {
+      if (response.ok) {
+        throw new Error(`Invalid JSON response from server: ${err.message}`);
+      }
+    }
+  }
 
   if (!response.ok) {
-    throw new Error(data.detail || "An unexpected error occurred");
+    throw new Error(extractErrorMessage(data, response));
   }
 
   return data;

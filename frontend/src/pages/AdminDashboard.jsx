@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Siren, ShieldCheck, PieChart, FileText, CheckCircle2, Clock, Activity, Filter, Search, Check, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
+import LoadErrorBanner from '../components/LoadErrorBanner';
 
 export default function AdminDashboard({ user }) {
   const [analytics, setAnalytics] = useState(null);
   const [residents, setResidents] = useState([]);
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   // Interactive Filter States
   const [incidentFilter, setIncidentFilter] = useState('all');
@@ -24,8 +26,10 @@ export default function AdminDashboard({ user }) {
       setAnalytics(anData);
       setResidents(resList);
       setIncidents(incList);
+      setLoadError(null);
     } catch (err) {
       console.error("Error loading admin analytics:", err);
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -94,6 +98,8 @@ export default function AdminDashboard({ user }) {
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '32px 24px' }}>
+
+      <LoadErrorBanner message={loadError} onRetry={loadAdminData} />
       
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>

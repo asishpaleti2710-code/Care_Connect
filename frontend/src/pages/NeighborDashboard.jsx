@@ -15,6 +15,7 @@ import {
 import { api } from '../services/api';
 import { useGeolocation } from '../hooks/useGeolocation';
 import RealisticMap from '../components/RealisticMap';
+import LoadErrorBanner from '../components/LoadErrorBanner';
 import { useLanguage } from '../context/LanguageContext';
 
 export default function NeighborDashboard({ user }) {
@@ -22,6 +23,7 @@ export default function NeighborDashboard({ user }) {
   const [incidents, setIncidents] = useState([]);
   const [residentsMap, setResidentsMap] = useState({});
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [respondingId, setRespondingId] = useState(null);
 
   const geo = useGeolocation();
@@ -38,8 +40,10 @@ export default function NeighborDashboard({ user }) {
         return acc;
       }, {});
       setResidentsMap(rMap);
+      setLoadError(null);
     } catch (err) {
       console.error("Error loading neighbor emergency feed:", err);
+      setLoadError(err.message);
     } finally {
       setLoading(false);
     }
@@ -87,6 +91,8 @@ export default function NeighborDashboard({ user }) {
 
   return (
     <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '28px 24px' }}>
+
+      <LoadErrorBanner message={loadError} onRetry={loadData} />
       
       {/* Header Motto Banner */}
       <div className="glass-card" style={{
