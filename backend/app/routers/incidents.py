@@ -6,9 +6,12 @@ import random
 from app.database import get_db
 from app.models.incident import Incident
 from app.models.resident import Resident
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.incident import IncidentCreate, IncidentStatusUpdate, IncidentResponse
-from app.services.auth import get_current_user
+from app.services.auth import RESPONDER_ROLES, get_current_user, require_roles
+
+require_responder = require_roles(*RESPONDER_ROLES)
+require_admin = require_roles(UserRole.ADMIN.value)
 
 router = APIRouter(prefix="/api/incidents", tags=["Incidents"])
 
@@ -21,6 +24,15 @@ def trigger_incident(
     resident = db.query(Resident).filter(Resident.id == inc_in.resident_id).first()
     if not resident:
         raise HTTPException(status_code=404, detail="Resident not found")
+
+    if (
+        current_user.role == UserRole.RESIDENT.value
+        and resident.user_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Residents may only raise emergencies for themselves",
+        )
 
     # Update resident status to emergency
     resident.status = "emergency"
@@ -57,7 +69,7 @@ def get_incidents(
 def accept_incident(
     incident_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_responder)
 ):
     inc = db.query(Incident).filter(Incident.id == incident_id).first()
     if not inc:
@@ -78,7 +90,7 @@ def update_incident_status(
     incident_id: int,
     status_in: IncidentStatusUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_responder)
 ):
     inc = db.query(Incident).filter(Incident.id == incident_id).first()
     if not inc:
@@ -108,7 +120,7 @@ def update_incident_status(
 @router.get("/analytics")
 def get_incident_analytics(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     all_incidents = db.query(Incident).all()
     total = len(all_incidents)

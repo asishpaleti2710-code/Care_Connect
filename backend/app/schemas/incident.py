@@ -1,16 +1,16 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
 from datetime import datetime
 
 class IncidentCreate(BaseModel):
-    resident_id: int
-    emergency_type: Optional[str] = "Medical Emergency"
-    priority: Optional[str] = "High"
-    description: Optional[str] = None
-    location: Optional[str] = None
+    resident_id: int = Field(gt=0)
+    emergency_type: Optional[str] = Field(default="Medical Emergency", max_length=80)
+    priority: Optional[Literal["Low", "Moderate", "High", "Critical"]] = "High"
+    description: Optional[str] = Field(default=None, max_length=2000)
+    location: Optional[str] = Field(default=None, max_length=200)
 
 class IncidentStatusUpdate(BaseModel):
-    status: str  # Pending, Accepted, In Progress, Resolved
+    status: Literal["Pending", "Accepted", "In Progress", "Resolved"]
 
 class IncidentResponse(BaseModel):
     id: int

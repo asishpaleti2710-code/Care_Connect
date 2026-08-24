@@ -1,15 +1,37 @@
 import bcrypt
 import jwt
 from datetime import datetime, timedelta
+from typing import Callable, Iterable
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+
+# Roles a visitor may pick for themselves during self-service registration.
+# Privileged roles must be assigned by an administrator.
+SELF_SERVICE_ROLES = {
+    UserRole.RESIDENT.value,
+    UserRole.GUARDIAN.value,
+    UserRole.NEIGHBOUR.value,
+}
+
+STAFF_ROLES = {
+    UserRole.ADMIN.value,
+    UserRole.CAREGIVER.value,
+}
+
+RESPONDER_ROLES = {
+    UserRole.ADMIN.value,
+    UserRole.CAREGIVER.value,
+    UserRole.SECURITY.value,
+    UserRole.VOLUNTEER.value,
+    UserRole.NEIGHBOUR.value,
+}
 
 security = HTTPBearer()
 
@@ -56,3 +78,16 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+def require_roles(*allowed_roles: str) -> Callable[[User], User]:
+    allowed: Iterable[str] = set(allowed_roles)
+
+    def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions for this operation",
+            )
+        return current_user
+
+    return dependency

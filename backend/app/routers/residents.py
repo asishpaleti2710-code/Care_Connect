@@ -3,9 +3,11 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.models.resident import Resident
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.resident import ResidentCreate, ResidentUpdate, ResidentResponse
-from app.services.auth import get_current_user
+from app.services.auth import get_current_user, require_roles
+
+require_staff = require_roles(UserRole.ADMIN.value, UserRole.CAREGIVER.value)
 
 router = APIRouter(prefix="/api/residents", tags=["Residents"])
 
@@ -20,7 +22,7 @@ def get_residents(
 def create_resident(
     resident_in: ResidentCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_staff)
 ):
     new_resident = Resident(
         full_name=resident_in.full_name,
@@ -50,7 +52,7 @@ def update_resident(
     resident_id: int,
     resident_in: ResidentUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_staff)
 ):
     resident = db.query(Resident).filter(Resident.id == resident_id).first()
     if not resident:
@@ -68,7 +70,7 @@ def update_resident(
 def delete_resident(
     resident_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_staff)
 ):
     resident = db.query(Resident).filter(Resident.id == resident_id).first()
     if not resident:

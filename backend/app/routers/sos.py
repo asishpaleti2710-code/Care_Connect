@@ -5,9 +5,11 @@ from datetime import datetime
 from app.database import get_db
 from app.models.sos import SOSAlert
 from app.models.resident import Resident
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.sos import SOSCreate, SOSResponse
-from app.services.auth import get_current_user
+from app.services.auth import RESPONDER_ROLES, get_current_user, require_roles
+
+require_responder = require_roles(*RESPONDER_ROLES)
 
 router = APIRouter(prefix="/api/sos", tags=["SOS Alerts"])
 
@@ -20,6 +22,15 @@ def trigger_sos(
     resident = db.query(Resident).filter(Resident.id == sos_in.resident_id).first()
     if not resident:
         raise HTTPException(status_code=404, detail="Resident not found")
+
+    if (
+        current_user.role == UserRole.RESIDENT.value
+        and resident.user_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Residents may only raise alerts for themselves",
+        )
 
     # Update resident status to emergency
     resident.status = "emergency"
@@ -45,7 +56,7 @@ def get_sos_alerts(
 def resolve_sos_alert(
     alert_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_responder)
 ):
     alert = db.query(SOSAlert).filter(SOSAlert.id == alert_id).first()
     if not alert:

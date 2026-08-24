@@ -276,10 +276,7 @@ export default function Login({ onLoginSuccess, onBackToIntro }) {
               >
                 <option value="resident">Resident</option>
                 <option value="guardian">Guardian / Family</option>
-                <option value="volunteer">Volunteer Responder</option>
-                <option value="security">Campus Security</option>
-                <option value="admin">Administrator</option>
-                <option value="caregiver">Nurse Caregiver</option>
+                <option value="neighbour">Community Neighbor</option>
               </select>
             </div>
           )}
