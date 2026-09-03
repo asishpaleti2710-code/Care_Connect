@@ -31,20 +31,38 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _loadCurrentServer() async {
-    final stored = await StorageService().getApiBaseUrl();
+    var stored = await StorageService().getApiBaseUrl();
+    if (stored != null && (
+        stored.contains('localhost') ||
+        stored.contains('127.0.0.1') ||
+        stored.contains('10.0.2.2') ||
+        stored.contains('192.168.') ||
+        stored.contains('api.careconnect.app') ||
+        stored.trim().isEmpty
+    )) {
+      await StorageService().saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+      stored = ApiConfig.cloudProductionUrl;
+    }
+
     if (mounted) {
       setState(() {
-        _currentBaseUrl = (stored != null && stored.isNotEmpty) ? stored : ApiConfig.baseUrl;
+        _currentBaseUrl = (stored != null && stored.isNotEmpty) ? stored : ApiConfig.cloudProductionUrl;
       });
       _pingServer(_currentBaseUrl);
     }
   }
 
   Future<void> _pingServer(String url) async {
+    if (mounted) setState(() => _serverLatency = 'Connecting...');
     final res = await ApiService().checkOnlineHealth(url);
     if (mounted) {
       setState(() {
-        _serverLatency = res['isOnline'] == true ? '${res['latencyMs']}ms' : 'Offline';
+        if (res['isOnline'] == true) {
+          _serverLatency = '${res['latencyMs']}ms';
+          _currentBaseUrl = res['serverUrl'] ?? _currentBaseUrl;
+        } else {
+          _serverLatency = 'Connecting...';
+        }
       });
     }
   }

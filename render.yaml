@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: careconnect-backend
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -c "import os, sys; os.chdir('backend') if os.path.isdir('backend') else None; import uvicorn; uvicorn.run('app.main:app', host='0.0.0.0', port=int(os.getenv('PORT', 8000)))"
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PROJECT_NAME
+        value: CareConnect Cloud API
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: careconnect-postgres
+          property: connectionString
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
+
+databases:
+  - name: careconnect-postgres
+    plan: free
+    region: oregon
+    databaseName: careconnect
+    user: careconnect_admin

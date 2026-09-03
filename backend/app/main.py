@@ -72,12 +72,13 @@ import collections
 
 RATE_LIMIT_WINDOW = 60  # seconds
 MAX_REQUESTS_PER_WINDOW = 200  # general requests
-MAX_SENSITIVE_REQUESTS = 50   # auth / sos endpoints
+MAX_SENSITIVE_REQUESTS = 120   # auth / sos endpoints
 _ip_request_history = collections.defaultdict(list)
 
 class RateLimitingAndSecurityMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
-        client_ip = request.client.host if request.client else "unknown"
+        forwarded = request.headers.get("x-forwarded-for")
+        client_ip = forwarded.split(",")[0].strip() if forwarded else (request.client.host if request.client else "unknown")
         now = time.time()
 
         # Check rate limits on non-health and non-websocket routes

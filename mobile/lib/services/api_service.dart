@@ -96,18 +96,31 @@ class ApiService {
 
   Dio get client => _dio;
 
-  /// Check online server connectivity and latency
+  /// Check online server connectivity and latency with cold-start resilience
   Future<Map<String, dynamic>> checkOnlineHealth([String? testUrl]) async {
-    final targetUrl = testUrl ?? (await _storageService.getApiBaseUrl()) ?? ApiConfig.baseUrl;
+    var targetUrl = testUrl ?? (await _storageService.getApiBaseUrl()) ?? ApiConfig.cloudProductionUrl;
+
+    // Discard any local/unreachable URLs
+    if (targetUrl.contains('localhost') ||
+        targetUrl.contains('127.0.0.1') ||
+        targetUrl.contains('10.0.2.2') ||
+        targetUrl.contains('192.168.') ||
+        targetUrl.contains('api.careconnect.app') ||
+        targetUrl.trim().isEmpty) {
+      targetUrl = ApiConfig.cloudProductionUrl;
+      await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+    }
+
     final stopwatch = Stopwatch()..start();
     try {
       final tempDio = Dio(
         BaseOptions(
-          connectTimeout: const Duration(seconds: 5),
-          receiveTimeout: const Duration(seconds: 5),
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
         ),
       );
-      final response = await tempDio.get('${targetUrl.replaceAll(RegExp(r'/+$'), '')}/health');
+      final clean = targetUrl.replaceAll(RegExp(r'/+$'), '');
+      final response = await tempDio.get('$clean/health');
       stopwatch.stop();
       return {
         'isOnline': response.statusCode == 200,
@@ -117,6 +130,28 @@ class ApiService {
       };
     } catch (e) {
       stopwatch.stop();
+      // If a non-cloud URL failed, try pinging production cloud as backup
+      if (targetUrl != ApiConfig.cloudProductionUrl) {
+        try {
+          final fallbackDio = Dio(
+            BaseOptions(
+              connectTimeout: const Duration(seconds: 8),
+              receiveTimeout: const Duration(seconds: 8),
+            ),
+          );
+          final fbRes = await fallbackDio.get('${ApiConfig.cloudProductionUrl}/health');
+          if (fbRes.statusCode == 200) {
+            await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+            return {
+              'isOnline': true,
+              'latencyMs': stopwatch.elapsedMilliseconds,
+              'serverUrl': ApiConfig.cloudProductionUrl,
+              'status': 'online',
+            };
+          }
+        } catch (_) {}
+      }
+
       return {
         'isOnline': false,
         'latencyMs': stopwatch.elapsedMilliseconds,
