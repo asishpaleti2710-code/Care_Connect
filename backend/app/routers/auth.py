@@ -1,43 +1,77 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
+from app.models.resident import Resident
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, UserProfileUpdate, ChangePasswordRequest
 from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
+
+logger = logging.getLogger("careconnect.auth")
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=Token)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    logger.info(f"[REGISTER REQUEST] Email: {user_data.email}, Role: {user_data.role}, Name: {user_data.full_name}")
     db_user = db.query(User).filter(User.email == user_data.email).first()
     if db_user:
+        logger.warning(f"[REGISTER FAILED] Email already registered: {user_data.email}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="Email already registered. Please sign in."
         )
     
     new_user = User(
         email=user_data.email,
         hashed_password=hash_password(user_data.password),
         full_name=user_data.full_name,
-        role=user_data.role or "caregiver"
+        role=user_data.role or "resident"
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
+    # Automatically provision a Resident record for resident registrations
+    if new_user.role == "resident":
+        existing_res = db.query(Resident).filter(Resident.user_id == new_user.id).first()
+        if not existing_res:
+            res_record = Resident(
+                user_id=new_user.id,
+                full_name=new_user.full_name,
+                age=25,
+                blood_group="O+",
+                room_number=f"Suite {100 + new_user.id}",
+                address="Main Care Campus, Wing A",
+                emergency_contact="+1-555-CARE-911",
+                medical_notes="Standard monitoring profile created on registration.",
+                status="safe"
+            )
+            db.add(res_record)
+            db.commit()
+
+    logger.info(f"[REGISTER SUCCESS] User ID {new_user.id} registered: {new_user.email} (Role: {new_user.role})")
     access_token = create_access_token(data={"sub": new_user.email})
     return Token(access_token=access_token, token_type="bearer", user=new_user)
 
 @router.post("/login", response_model=Token)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
+    logger.info(f"[LOGIN REQUEST] Attempting login for email: {login_data.email}")
     user = db.query(User).filter(User.email == login_data.email).first()
-    if not user or not verify_password(login_data.password, user.hashed_password):
+    if not user:
+        logger.warning(f"[LOGIN FAILED] User not found: {login_data.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password"
+        )
+    if not verify_password(login_data.password, user.hashed_password):
+        logger.warning(f"[LOGIN FAILED] Incorrect password for email: {login_data.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password"
         )
     
+    logger.info(f"[LOGIN SUCCESS] User {user.email} authenticated successfully (Role: {user.role})")
     access_token = create_access_token(data={"sub": user.email})
     return Token(access_token=access_token, token_type="bearer", user=user)
 

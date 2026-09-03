@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
+import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
+import '../services/storage_service.dart';
+import '../services/api_service.dart';
 import '../widgets/glass_card.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -18,6 +21,33 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _passwordController = TextEditingController();
   String _selectedRole = 'resident';
   bool _obscurePassword = true;
+  String _currentBaseUrl = ApiConfig.baseUrl;
+  String? _serverLatency;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentServer();
+  }
+
+  Future<void> _loadCurrentServer() async {
+    final stored = await StorageService().getApiBaseUrl();
+    if (mounted) {
+      setState(() {
+        _currentBaseUrl = (stored != null && stored.isNotEmpty) ? stored : ApiConfig.baseUrl;
+      });
+      _pingServer(_currentBaseUrl);
+    }
+  }
+
+  Future<void> _pingServer(String url) async {
+    final res = await ApiService().checkOnlineHealth(url);
+    if (mounted) {
+      setState(() {
+        _serverLatency = res['isOnline'] == true ? '${res['latencyMs']}ms' : 'Offline';
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -137,7 +167,50 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+
+                      // Interactive Server Connection Chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _serverLatency == 'Offline'
+                                ? const Color(0xFFEF4444)
+                                : const Color(0xFF334155),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: _serverLatency == 'Offline'
+                                    ? const Color(0xFFEF4444)
+                                    : const Color(0xFF10B981),
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _currentBaseUrl.contains('railway')
+                                    ? 'Server: Cloud Production (${_serverLatency ?? 'checking...'})'
+                                    : 'Server: $_currentBaseUrl (${_serverLatency ?? 'checking...'})',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF94A3B8),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       // Full Name
                       const Text(

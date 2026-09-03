@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
+import '../config/api_config.dart';
 import '../providers/auth_provider.dart';
+import '../services/storage_service.dart';
+import '../services/api_service.dart';
 import '../widgets/glass_card.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -16,6 +19,181 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  String _currentBaseUrl = ApiConfig.baseUrl;
+  String? _serverLatency;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentServer();
+  }
+
+  Future<void> _loadCurrentServer() async {
+    final stored = await StorageService().getApiBaseUrl();
+    if (mounted) {
+      setState(() {
+        _currentBaseUrl = (stored != null && stored.isNotEmpty) ? stored : ApiConfig.baseUrl;
+      });
+      _pingServer(_currentBaseUrl);
+    }
+  }
+
+  Future<void> _pingServer(String url) async {
+    final res = await ApiService().checkOnlineHealth(url);
+    if (mounted) {
+      setState(() {
+        _serverLatency = res['isOnline'] == true ? '${res['latencyMs']}ms' : 'Offline';
+      });
+    }
+  }
+
+  void _showServerSwitcherDialog(BuildContext context) {
+    final customUrlController = TextEditingController(text: _currentBaseUrl);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E293B),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, color: Color(0xFF38BDF8), size: 22),
+            SizedBox(width: 8),
+            Text(
+              'Backend Server Connection',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'Select server connection for your Moto G32 or development device:',
+                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+              ),
+              const SizedBox(height: 12),
+              _serverOptionTile(
+                title: '☁️ Cloud Production (Railway)',
+                subtitle: 'Recommended for real phones (online 24/7)',
+                url: ApiConfig.cloudProductionUrl,
+                ctx: ctx,
+              ),
+              const SizedBox(height: 8),
+              _serverOptionTile(
+                title: '💻 Local PC Wi-Fi',
+                subtitle: 'Direct local server on same Wi-Fi',
+                url: ApiConfig.localLanUrl,
+                ctx: ctx,
+              ),
+              const SizedBox(height: 8),
+              _serverOptionTile(
+                title: '📱 Android Emulator',
+                subtitle: '10.0.2.2 loopback for emulator only',
+                url: ApiConfig.emulatorUrl,
+                ctx: ctx,
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Or Custom Server URL:',
+                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: customUrlController,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  hintText: 'https://...',
+                  hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  filled: true,
+                  fillColor: const Color(0xFF0F172A),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Color(0xFF334155)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newUrl = customUrlController.text.trim();
+              if (newUrl.isNotEmpty) {
+                await StorageService().saveApiBaseUrl(newUrl);
+                if (mounted) setState(() => _currentBaseUrl = newUrl);
+                if (ctx.mounted) Navigator.pop(ctx);
+                _pingServer(newUrl);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488)),
+            child: const Text('Save & Connect', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _serverOptionTile({
+    required String title,
+    required String subtitle,
+    required String url,
+    required BuildContext ctx,
+  }) {
+    final isSelected = _currentBaseUrl == url;
+    return InkWell(
+      onTap: () async {
+        await StorageService().saveApiBaseUrl(url);
+        if (mounted) setState(() => _currentBaseUrl = url);
+        if (ctx.mounted) Navigator.pop(ctx);
+        _pingServer(url);
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0D9488).withValues(alpha: 0.2) : const Color(0xFF0F172A),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF0D9488) : const Color(0xFF334155),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+              color: isSelected ? const Color(0xFF0D9488) : const Color(0xFF64748B),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -120,7 +298,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: 16),
+
+                      // Interactive Server Connection Chip & Switcher
+                      InkWell(
+                        onTap: () => _showServerSwitcherDialog(context),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0F172A),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: _serverLatency == 'Offline'
+                                  ? const Color(0xFFEF4444)
+                                  : const Color(0xFF334155),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: _serverLatency == 'Offline'
+                                      ? const Color(0xFFEF4444)
+                                      : const Color(0xFF10B981),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _currentBaseUrl.contains('railway')
+                                      ? 'Server: Cloud Production (${_serverLatency ?? 'checking...'})'
+                                      : 'Server: $_currentBaseUrl (${_serverLatency ?? 'checking...'})',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF94A3B8),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const Icon(
+                                Icons.settings_ethernet_rounded,
+                                size: 14,
+                                color: Color(0xFF38BDF8),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       // Error banner if any
                       if (authState.errorMessage != null) ...[

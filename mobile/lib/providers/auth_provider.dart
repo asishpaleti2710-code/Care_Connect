@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
@@ -64,6 +65,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   Future<bool> login(String email, String password) async {
+    developer.log('[AUTH] Attempting login for email: $email', name: 'CareConnect.Auth');
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final response = await _apiService.login(email, password);
@@ -74,19 +76,38 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await _storageService.saveToken(token);
       await _storageService.saveUser(jsonEncode(user.toJson()));
 
+      developer.log('[AUTH SUCCESS] User logged in: ${user.fullName} (${user.role}) - ID: ${user.id}', name: 'CareConnect.Auth');
       state = AuthState(isAuthenticated: true, user: user, isLoading: false);
       return true;
     } on DioException catch (e) {
-      final detail = e.response?.data?['detail'] ?? 'Login failed. Please check credentials.';
-      state = state.copyWith(isLoading: false, errorMessage: detail);
+      String errorMessage;
+      if (e.response?.data is Map && e.response?.data['detail'] != null) {
+        errorMessage = e.response!.data['detail'].toString();
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'Connection timed out. Check your internet connection or switch to Cloud Server.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Unable to reach backend server. Tap the server settings icon to switch to Cloud Server.';
+      } else {
+        errorMessage = e.message ?? 'Login failed. Please check credentials.';
+      }
+
+      developer.log('[AUTH ERROR] Login failed: $errorMessage', name: 'CareConnect.Auth');
+      state = state.copyWith(isLoading: false, errorMessage: errorMessage);
       return false;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: 'An unexpected error occurred.');
+      developer.log('[AUTH EXCEPTION] Unexpected error during login: $e', name: 'CareConnect.Auth');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'An unexpected error occurred: ${e.toString()}',
+      );
       return false;
     }
   }
 
   Future<bool> register(String email, String password, String fullName, {String role = 'resident'}) async {
+    developer.log('[AUTH] Attempting registration for email: $email, role: $role, name: $fullName', name: 'CareConnect.Auth');
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final response = await _apiService.register(email, password, fullName, role: role);
@@ -98,17 +119,36 @@ class AuthNotifier extends StateNotifier<AuthState> {
         final user = UserModel.fromJson(data['user'] ?? data);
         await _storageService.saveToken(token);
         await _storageService.saveUser(jsonEncode(user.toJson()));
+        developer.log('[AUTH SUCCESS] Registration and auto-login successful: ${user.fullName}', name: 'CareConnect.Auth');
         state = AuthState(isAuthenticated: true, user: user, isLoading: false);
       } else {
+        developer.log('[AUTH SUCCESS] Registration successful, awaiting manual login', name: 'CareConnect.Auth');
         state = state.copyWith(isLoading: false);
       }
       return true;
     } on DioException catch (e) {
-      final detail = e.response?.data?['detail'] ?? 'Registration failed.';
-      state = state.copyWith(isLoading: false, errorMessage: detail);
+      String errorMessage;
+      if (e.response?.data is Map && e.response?.data['detail'] != null) {
+        errorMessage = e.response!.data['detail'].toString();
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.sendTimeout ||
+          e.type == DioExceptionType.receiveTimeout) {
+        errorMessage = 'Connection timed out. Check your internet connection or switch to Cloud Server.';
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Unable to reach backend server. Tap the server settings icon to switch to Cloud Server.';
+      } else {
+        errorMessage = e.message ?? 'Registration failed.';
+      }
+
+      developer.log('[AUTH ERROR] Registration failed: $errorMessage', name: 'CareConnect.Auth');
+      state = state.copyWith(isLoading: false, errorMessage: errorMessage);
       return false;
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: 'An unexpected error occurred.');
+      developer.log('[AUTH EXCEPTION] Unexpected error during registration: $e', name: 'CareConnect.Auth');
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'An unexpected error occurred: ${e.toString()}',
+      );
       return false;
     }
   }

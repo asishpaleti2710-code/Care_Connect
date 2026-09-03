@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'package:dio/dio.dart';
 import '../config/api_config.dart';
 import 'storage_service.dart';
@@ -19,18 +20,60 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final customUrl = await _storageService.getApiBaseUrl();
+          String? customUrl = await _storageService.getApiBaseUrl();
+          // Auto-clean stale or unreachable local IP addresses
+          if (customUrl != null && (customUrl.contains('192.168.55.105') || customUrl.trim().isEmpty)) {
+            await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+            customUrl = ApiConfig.cloudProductionUrl;
+          }
+
           if (customUrl != null && customUrl.trim().isNotEmpty) {
             options.baseUrl = customUrl.trim();
+          } else {
+            options.baseUrl = ApiConfig.cloudProductionUrl;
           }
 
           final token = await _storageService.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
           }
+
+          // Debug Request Logging
+          developer.log('[API REQ] ${options.method} ${options.baseUrl}${options.path}', name: 'CareConnect.Network');
+          if (options.data != null && options.data is Map) {
+            final loggedData = Map<String, dynamic>.from(options.data as Map);
+            if (loggedData.containsKey('password')) loggedData['password'] = '******';
+            developer.log('[API REQ DATA] $loggedData', name: 'CareConnect.Network');
+          }
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
+        onResponse: (response, handler) {
+          developer.log('[API RES] ${response.statusCode} from ${response.requestOptions.baseUrl}${response.requestOptions.path}', name: 'CareConnect.Network');
+          return handler.next(response);
+        },
+        onError: (DioException error, handler) async {
+          developer.log('[API ERR] ${error.type} on ${error.requestOptions.baseUrl}${error.requestOptions.path}: ${error.message}', name: 'CareConnect.Network');
+          
+          // Automatic Failover: If local/custom URL failed with connection error, retry using Production Cloud URL
+          final isNetworkError = error.type == DioExceptionType.connectionTimeout ||
+              error.type == DioExceptionType.connectionError ||
+              error.type == DioExceptionType.sendTimeout ||
+              error.type == DioExceptionType.receiveTimeout;
+
+          if (isNetworkError && error.requestOptions.baseUrl != ApiConfig.cloudProductionUrl) {
+            developer.log('[API AUTO-FAILOVER] Retrying request against Production Cloud URL: ${ApiConfig.cloudProductionUrl}', name: 'CareConnect.Network');
+            try {
+              final fallbackOptions = error.requestOptions.copyWith(
+                baseUrl: ApiConfig.cloudProductionUrl,
+              );
+              final fallbackResponse = await _dio.fetch(fallbackOptions);
+              await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+              developer.log('[API AUTO-FAILOVER SUCCESS] Succeeded on cloud backend!', name: 'CareConnect.Network');
+              return handler.resolve(fallbackResponse);
+            } catch (fallbackError) {
+              developer.log('[API AUTO-FAILOVER FAILED] Fallback also failed: $fallbackError', name: 'CareConnect.Network');
+            }
+          }
           return handler.next(error);
         },
       ),

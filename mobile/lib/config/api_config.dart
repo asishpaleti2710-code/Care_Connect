@@ -1,11 +1,17 @@
 class ApiConfig {
-  // Production Railway Backend URL
+  // Production Railway Backend URL (Online 24/7 accessible from anywhere on mobile)
   static const String cloudProductionUrl =
       'https://careconnect-production-bab1.up.railway.app';
   static const String cloudCustomDomain = 'https://api.careconnect.app';
 
-  // Active Base URL getter
- static String get baseUrl => 'http://192.168.55.105:8000';
+  // Local Wi-Fi Network URL (for testing against local dev machine on same Wi-Fi)
+  static const String localLanUrl = 'http://10.222.97.248:8000';
+
+  // Android Emulator local loopback URL
+  static const String emulatorUrl = 'http://10.0.2.2:8000';
+
+  // Active Default Base URL - Always defaults to production cloud URL for real devices
+  static String get baseUrl => cloudProductionUrl;
 
   // Endpoints
   static const String loginEndpoint = '/api/auth/login';
