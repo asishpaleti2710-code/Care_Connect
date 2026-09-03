@@ -51,9 +51,23 @@ class ServerConfigNotifier extends StateNotifier<ServerConfigState> {
   }
 
   Future<void> _loadConfig() async {
-    final savedUrl = await _storageService.getApiBaseUrl();
+    var savedUrl = await _storageService.getApiBaseUrl();
     final isOnline = await _storageService.getOnlineMode();
-    final activeUrl = savedUrl ?? ApiConfig.baseUrl;
+
+    // Auto-clean any local, emulator, or invalid URLs so physical devices never get trapped
+    if (savedUrl != null && (
+        savedUrl.contains('localhost') ||
+        savedUrl.contains('127.0.0.1') ||
+        savedUrl.contains('10.0.2.2') ||
+        savedUrl.contains('192.168.') ||
+        savedUrl.contains('api.careconnect.app') ||
+        savedUrl.trim().isEmpty
+    )) {
+      await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+      savedUrl = ApiConfig.cloudProductionUrl;
+    }
+
+    final activeUrl = savedUrl ?? ApiConfig.cloudProductionUrl;
 
     state = state.copyWith(
       serverUrl: activeUrl,
@@ -77,7 +91,7 @@ class ServerConfigNotifier extends StateNotifier<ServerConfigState> {
   }
 
   Future<void> resetToDefault() async {
-    final defaultUrl = ApiConfig.baseUrl;
+    const defaultUrl = ApiConfig.cloudProductionUrl;
     await _storageService.saveApiBaseUrl(defaultUrl);
     state = state.copyWith(serverUrl: defaultUrl);
     await testConnection(defaultUrl);

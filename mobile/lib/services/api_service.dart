@@ -21,8 +21,22 @@ class ApiService {
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           String? customUrl = await _storageService.getApiBaseUrl();
-          // Auto-clean stale or unreachable local IP addresses
-          if (customUrl != null && (customUrl.contains('192.168.55.105') || customUrl.trim().isEmpty)) {
+
+          // Auto-clean any local, emulator, or invalid URLs so physical devices never get trapped
+          final isLocalOrInvalid = customUrl != null && (
+            customUrl.contains('localhost') ||
+            customUrl.contains('127.0.0.1') ||
+            customUrl.contains('10.0.2.2') ||
+            customUrl.contains('192.168.') ||
+            customUrl.contains('api.careconnect.app') ||
+            customUrl.trim().isEmpty
+          );
+
+          if (isLocalOrInvalid) {
+            developer.log(
+              '[NETWORK SANITIZER] Detected local/unreachable URL ($customUrl). Resetting to Cloud Production URL.',
+              name: 'CareConnect.Network',
+            );
             await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
             customUrl = ApiConfig.cloudProductionUrl;
           }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../config/api_config.dart';
 import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../providers/lock_screen_provider.dart';
@@ -95,7 +96,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               controller: controller,
               style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
               decoration: AppGlass.inputDecoration(
-                hintText: 'https://api.careconnect.app or http://10.0.2.2:8000',
+                hintText: ApiConfig.cloudProductionUrl,
                 prefixIcon: const Icon(Icons.link_rounded, color: AppColors.accentTeal),
               ),
             ),
@@ -104,14 +105,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               spacing: 6,
               children: [
                 ActionChip(
-                  backgroundColor: AppColors.bgDarkInput,
-                  label: const Text('Production Cloud', style: TextStyle(fontSize: 10, color: AppColors.textPrimary)),
-                  onPressed: () => controller.text = 'https://api.careconnect.app',
+                  backgroundColor: AppColors.accentTeal.withValues(alpha: 0.2),
+                  label: const Text('☁️ Railway Cloud (Online)', style: TextStyle(fontSize: 10, color: AppColors.accentTeal, fontWeight: FontWeight.bold)),
+                  onPressed: () => controller.text = ApiConfig.cloudProductionUrl,
                 ),
                 ActionChip(
                   backgroundColor: AppColors.bgDarkInput,
-                  label: const Text('Localhost (8000)', style: TextStyle(fontSize: 10, color: AppColors.textPrimary)),
-                  onPressed: () => controller.text = 'http://localhost:8000',
+                  label: const Text('💻 Local Wi-Fi (PC)', style: TextStyle(fontSize: 10, color: AppColors.textPrimary)),
+                  onPressed: () => controller.text = ApiConfig.localLanUrl,
                 ),
               ],
             ),
