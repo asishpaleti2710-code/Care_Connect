@@ -19,7 +19,6 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Dynamic online / custom base URL routing
           final customUrl = await _storageService.getApiBaseUrl();
           if (customUrl != null && customUrl.trim().isNotEmpty) {
             options.baseUrl = customUrl.trim();
@@ -70,7 +69,9 @@ class ApiService {
     }
   }
 
+  // =========================================================================
   // Auth Methods
+  // =========================================================================
   Future<Response> login(String email, String password) async {
     return await _dio.post(
       ApiConfig.loginEndpoint,
@@ -89,7 +90,126 @@ class ApiService {
     return await _dio.get(ApiConfig.meEndpoint);
   }
 
-  // SOS & Incidents Methods
+  // =========================================================================
+  // Upgraded SOS Alert Methods
+  // =========================================================================
+  Future<Response> createSosAlert({
+    required String category,
+    String? message,
+    double? latitude,
+    double? longitude,
+    String priority = 'CRITICAL',
+    int? residentId,
+  }) async {
+    return await _dio.post(
+      ApiConfig.sosEndpoint,
+      data: {
+        'category': category,
+        'alert_type': category,
+        'message': message,
+        'latitude': latitude,
+        'longitude': longitude,
+        'priority': priority,
+        if (residentId != null) 'resident_id': residentId,
+      },
+    );
+  }
+
+  Future<Response> getSosAlerts({String? statusFilter, String? category}) async {
+    final queryParams = <String, dynamic>{};
+    if (statusFilter != null && statusFilter.isNotEmpty) {
+      queryParams['status_filter'] = statusFilter;
+    }
+    if (category != null && category.isNotEmpty) {
+      queryParams['category'] = category;
+    }
+    return await _dio.get(
+      ApiConfig.sosEndpoint,
+      queryParameters: queryParams,
+    );
+  }
+
+  Future<Response> getSosAlert(int id) async {
+    return await _dio.get('${ApiConfig.sosEndpoint}/$id');
+  }
+
+  Future<Response> acknowledgeSos(int id) async {
+    return await _dio.post('${ApiConfig.sosEndpoint}/$id/acknowledge');
+  }
+
+  Future<Response> respondToSos(int id, {String? notes}) async {
+    return await _dio.post(
+      '${ApiConfig.sosEndpoint}/$id/respond',
+      data: {if (notes != null) 'notes': notes},
+    );
+  }
+
+  Future<Response> resolveSos(int id, {String? notes}) async {
+    return await _dio.post(
+      '${ApiConfig.sosEndpoint}/$id/resolve',
+      data: {if (notes != null) 'notes': notes},
+    );
+  }
+
+  Future<Response> cancelSos(int id, {String? reason}) async {
+    return await _dio.post(
+      '${ApiConfig.sosEndpoint}/$id/cancel',
+      data: {if (reason != null) 'reason': reason},
+    );
+  }
+
+  Future<Response> getSosAnalytics() async {
+    return await _dio.get('${ApiConfig.sosEndpoint}/monitoring');
+  }
+
+  // =========================================================================
+  // In-App Notification Center Methods
+  // =========================================================================
+  Future<Response> getNotifications({bool unreadOnly = false, String? channel}) async {
+    final queryParams = <String, dynamic>{};
+    if (unreadOnly) queryParams['unread_only'] = true;
+    if (channel != null) queryParams['channel'] = channel;
+    return await _dio.get(
+      ApiConfig.notificationsEndpoint,
+      queryParameters: queryParams,
+    );
+  }
+
+  Future<Response> markNotificationRead(int id) async {
+    return await _dio.put('${ApiConfig.notificationsEndpoint}/$id/read');
+  }
+
+  Future<Response> markAllNotificationsRead() async {
+    return await _dio.put('${ApiConfig.notificationsEndpoint}/read-all');
+  }
+
+  Future<Response> getNotificationStats() async {
+    return await _dio.get('${ApiConfig.notificationsEndpoint}/stats');
+  }
+
+  // =========================================================================
+  // Incidents Legacy Workflow Methods (Preserved & Enhanced)
+  // =========================================================================
+  Future<Response> triggerSos(
+    String category,
+    String location,
+    double latitude,
+    double longitude, {
+    String? description,
+  }) async {
+    return await _dio.post(
+      '/api/incidents/trigger',
+      data: {
+        'emergency_type': category,
+        'incident_type': category,
+        'description': description ?? 'Immediate emergency assistance requested',
+        'location': location,
+        'latitude': latitude,
+        'longitude': longitude,
+      },
+    );
+  }
+
   Future<Response> triggerIncident({
     required String incidentType,
     required String description,
@@ -110,14 +230,25 @@ class ApiService {
     return await _dio.get('/api/incidents$query');
   }
 
-  Future<Response> updateIncidentStatus(int incidentId, String status) async {
+  Future<Response> updateIncidentStatus(
+    int incidentId,
+    String status, {
+    String? responderName,
+    String? responderRole,
+  }) async {
     return await _dio.put(
       '/api/incidents/$incidentId/status',
-      data: {'status': status},
+      data: {
+        'status': status,
+        if (responderName != null) 'responder_name': responderName,
+        if (responderRole != null) 'responder_role': responderRole,
+      },
     );
   }
 
-  // AI Module Methods
+  // =========================================================================
+  // AI & Entity Methods
+  // =========================================================================
   Future<Response> classifyEmergency(String description) async {
     return await _dio.post(
       '/api/ai/classify-emergency',
@@ -139,17 +270,14 @@ class ApiService {
     );
   }
 
-  // Residents Methods
   Future<Response> getResidents() async {
     return await _dio.get('/api/residents');
   }
 
-  // Guardians Methods
   Future<Response> getGuardians(int residentId) async {
     return await _dio.get('/api/guardians/resident/$residentId');
   }
 
-  // Analytics Methods
   Future<Response> getAnalytics() async {
     return await _dio.get('/api/incidents/analytics');
   }

@@ -70,6 +70,8 @@ class LockScreenNotifier extends StateNotifier<LockScreenSettings> {
     }
   }
 
+  Future<void> toggleLockScreen(bool value) => toggleLockScreenEnabled(value);
+
   Future<void> toggleNotificationWidget(bool value) async {
     state = state.copyWith(showNotificationWidget: value);
     if (value && state.isLockScreenEnabled) {

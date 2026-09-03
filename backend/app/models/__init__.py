@@ -1,6 +1,6 @@
 from app.models.user import User, UserRole
 from app.models.resident import Resident
-from app.models.sos import SOSAlert
+from app.models.sos import SOSAlert, SOSAuditLog
 from app.models.guardian import Guardian
 from app.models.volunteer import Volunteer
 from app.models.security import SecurityPerson
@@ -13,6 +13,7 @@ __all__ = [
     "UserRole",
     "Resident",
     "SOSAlert",
+    "SOSAuditLog",
     "Guardian",
     "Volunteer",
     "SecurityPerson",
@@ -20,4 +21,3 @@ __all__ = [
     "EmergencyContact",
     "Notification"
 ]
-

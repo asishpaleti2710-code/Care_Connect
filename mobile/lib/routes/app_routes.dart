@@ -7,10 +7,12 @@ import '../screens/ai_assistant_screen.dart';
 import '../screens/residents_screen.dart';
 import '../screens/responders_screen.dart';
 import '../screens/guardians_screen.dart';
+import '../screens/neighbor_dashboard_screen.dart';
 import '../screens/maps_screen.dart';
 import '../screens/analytics_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/lock_screen_hub_screen.dart';
+import '../screens/notifications_screen.dart';
 
 class AppRoutes {
   static const String initial = '/login';
@@ -22,10 +24,12 @@ class AppRoutes {
   static const String residents = '/residents';
   static const String responders = '/responders';
   static const String guardians = '/guardians';
+  static const String neighbor = '/neighbor';
   static const String maps = '/maps';
   static const String analytics = '/analytics';
   static const String settings = '/settings';
   static const String lockscreenHub = '/lockscreen-hub';
+  static const String notifications = '/notifications';
 
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
@@ -36,9 +40,12 @@ class AppRoutes {
         residents: (context) => const ResidentsScreen(),
         responders: (context) => const RespondersScreen(),
         guardians: (context) => const GuardiansScreen(),
+        neighbor: (context) => const NeighborDashboardScreen(),
         maps: (context) => const MapsScreen(),
         analytics: (context) => const AnalyticsScreen(),
         settings: (context) => const SettingsScreen(),
         lockscreenHub: (context) => const LockScreenHubScreen(),
+        notifications: (context) => const NotificationsScreen(),
       };
 }
+

@@ -86,10 +86,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<bool> register(String email, String password, String fullName) async {
+  Future<bool> register(String email, String password, String fullName, {String role = 'resident'}) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
-      final response = await _apiService.register(email, password, fullName);
+      final response = await _apiService.register(email, password, fullName, role: role);
       final data = response.data;
       
       // If registration returns access_token directly, auto-login

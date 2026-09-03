@@ -5,9 +5,9 @@ services:
     region: oregon
     plan: free
     branch: main
-    rootDir: CareConnect/backend
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app.main:app -w 2 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --timeout 120
+    startCommand: gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:$PORT --timeout 120
     healthCheckPath: /health
     envVars:
       - key: ENVIRONMENT
@@ -17,8 +17,17 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        fromDatabase:
+          name: careconnect-postgres
+          property: connectionString
       - key: CORS_ORIGINS
         value: "*"
       - key: PYTHON_VERSION
         value: 3.11.9
+
+databases:
+  - name: careconnect-postgres
+    plan: free
+    region: oregon
+    databaseName: careconnect
+    user: careconnect_admin

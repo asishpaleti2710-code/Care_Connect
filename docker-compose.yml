@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # -----------------------------------------------------------------------------
+  # 1. PostgreSQL Production Database
+  # -----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: careconnect_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: careconnect
+      POSTGRES_USER: careconnect_admin
+      POSTGRES_PASSWORD: careconnect_secure_password_change_me
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U careconnect_admin -d careconnect"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -----------------------------------------------------------------------------
+  # 2. CareConnect FastAPI Backend
+  # -----------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: careconnect_api
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - PROJECT_NAME=CareConnect Cloud API
+      - DATABASE_URL=postgresql+psycopg2://careconnect_admin:careconnect_secure_password_change_me@db:5432/careconnect
+      - SECRET_KEY=careconnect_super_secret_production_key_32chars_min_abcdef123456
+      - CORS_ORIGINS=*
+      - PORT=8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # -----------------------------------------------------------------------------
+  # 3. CareConnect Web Dashboard (Nginx)
+  # -----------------------------------------------------------------------------
+  frontend:
+    image: nginx:alpine
+    container_name: careconnect_web
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+    driver: local

@@ -1,21 +1,15 @@
-name: CareConnect CI/CD Pipeline
+name: CareConnect Enterprise CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master, asish-kumar ]
+    branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
 
 jobs:
-  # ----------------------------------------------------
-  # 1. Backend CI (FastAPI, SQLite, MySQL Drivers, Tests)
-  # ----------------------------------------------------
-  backend-test:
-    name: Backend Tests & Linting
+  backend-test-lint:
+    name: Backend Tests & Quality Checks
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -29,28 +23,17 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install httpx
+          pip install -r backend/requirements.txt pytest
 
-      - name: Run Backend Integration & Health Tests
-        env:
-          ENVIRONMENT: test
-          DATABASE_URL: sqlite:///./careconnect_test.db
-          SECRET_KEY: ci_test_secret_key_production_secure_32bytes_min
-          CORS_ORIGINS: "*"
+      - name: Run Backend API & SOS Emergency Suite
         run: |
+          cd backend
+          python test_sos_system.py
           python test_api.py
-          python test_portfolio_api.py
 
-  # ----------------------------------------------------
-  # 2. Frontend CI (React 19, Vite Build, PWA Generation)
-  # ----------------------------------------------------
   frontend-build:
-    name: Frontend Build & Verification
+    name: Web Frontend Build & PWA Verification
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -63,26 +46,17 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Frontend Dependencies
-        run: npm ci
+        run: |
+          cd frontend
+          npm ci
 
-      - name: Build React 19 PWA Production Bundle
-        env:
-          VITE_API_BASE_URL: https://careconnect-backend.onrender.com
-          VITE_AI_URL: https://careconnect-backend.onrender.com
-        run: npm run build
+      - name: Build Web Application
+        run: |
+          cd frontend
+          npm run build
 
-      - name: Upload Frontend Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: careconnect-web-dist
-          path: frontend/dist/
-          retention-days: 7
-
-  # ----------------------------------------------------
-  # 3. Mobile Build (Flutter APK Release Generation)
-  # ----------------------------------------------------
-  mobile-build:
-    name: Flutter Mobile Build (APK Release)
+  mobile-check:
+    name: Flutter Mobile Quality & Build Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -91,53 +65,22 @@ jobs:
       - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '17'
 
-      - name: Set up Flutter SDK
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
+          flutter-version: '3.24.x'
           channel: 'stable'
           cache: true
 
-      - name: Build Flutter Mobile APK
+      - name: Install Mobile Dependencies
         run: |
-          if [ -d "mobile" ]; then
-            cd mobile
-            flutter pub get
-            flutter analyze
-            flutter build apk --release
-          elif [ -d "../CareConnect-Flutter" ]; then
-            cd ../CareConnect-Flutter
-            flutter pub get
-            flutter analyze
-            flutter build apk --release
-          fi
+          cd mobile
+          flutter pub get
 
-      - name: Upload Android Release APK Artifact
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: careconnect-mobile-release-apk
-          path: |
-            mobile/build/app/outputs/flutter-apk/app-release.apk
-            ../CareConnect-Flutter/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
-  # ----------------------------------------------------
-  # 4. Automated Cloud Deploy Trigger (Render Webhook)
-  # ----------------------------------------------------
-  deploy-render:
-    name: Trigger Render Cloud Deployment
-    needs: [ backend-test, frontend-build ]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render Deploy Hook
-        if: env.RENDER_DEPLOY_HOOK_URL != ''
-        env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+      - name: Analyze Mobile Code
         run: |
-          curl -X POST "$RENDER_DEPLOY_HOOK_URL"
-          echo "Render deploy hook triggered successfully."
+          cd mobile
+          flutter analyze

@@ -17,11 +17,15 @@ migrate_working_dir/
 .idea/
 
 # Android related
+**/android/.gradle/
+.gradle/
 **/android/app/gradlew
 **/android/app/gradlew.bat
 **/android/local.properties
 **/android/app/libs/
 **/android/app/src/main/assets/
+*.apk
+*.aab
 
 # Flutter/Dart related
 **/doc/api/

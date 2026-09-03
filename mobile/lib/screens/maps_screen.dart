@@ -1,46 +1,78 @@
 import 'package:flutter/material.dart';
+import '../config/app_theme.dart';
+import '../widgets/glass_card.dart';
 
 class MapsScreen extends StatelessWidget {
   const MapsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     return Scaffold(
+      backgroundColor: AppColors.bgPrimary,
       appBar: AppBar(
-        title: const Text('Live GPS & Incident Map'),
+        backgroundColor: const Color(0xF20F172A),
+        title: Text('Campus GPS & Live Map', style: AppTheme.heading(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: colorScheme.outlineVariant),
-                  ),
+                child: GlassCard(
+                  padding: const EdgeInsets.all(20),
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.map_rounded, size: 72, color: Colors.blueAccent),
-                        const SizedBox(height: 16),
+                        Container(
+                          width: 84,
+                          height: 84,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: AppColors.tealGradient,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.accentTeal.withValues(alpha: 0.4),
+                                blurRadius: 24,
+                                spreadRadius: 4,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(Icons.explore_rounded, size: 44, color: Colors.white),
+                        ),
+                        const SizedBox(height: 20),
                         Text(
                           'Interactive Emergency Map',
-                          style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                          style: AppTheme.heading(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 32),
+                          padding: EdgeInsets.symmetric(horizontal: 24),
                           child: Text(
-                            'Live GPS coordinates, resident location pins, and turn-by-turn responder routes active.',
+                            'Live GPS coordinates (13.0827° N, 80.2707° E), building zones, and turn-by-turn responder routes active.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey),
+                            style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.bgDarkInput,
+                            borderRadius: BorderRadius.circular(9999),
+                            border: Border.all(color: AppColors.statusSafe),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.gps_fixed_rounded, color: AppColors.statusSafe, size: 14),
+                              SizedBox(width: 6),
+                              Text(
+                                'CAMPUS BEACON: ONLINE • ACCURACY 1.2M',
+                                style: TextStyle(color: AppColors.statusSafe, fontSize: 10, fontWeight: FontWeight.w800),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -49,20 +81,26 @@ class MapsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Refreshing GPS location pins...')),
-                        );
-                      },
-                      icon: const Icon(Icons.my_location_rounded),
-                      label: const Text('Recenter GPS'),
-                    ),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('📍 Refreshing GPS location beacon and building markers...'),
+                        backgroundColor: AppColors.accentTeal,
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentTeal,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ),
-                ],
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Refresh GPS Location Pins', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
               ),
             ],
           ),
