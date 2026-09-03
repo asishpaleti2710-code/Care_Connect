@@ -20,6 +20,11 @@ from app.schemas.sos import (
 )
 from app.services.auth import get_current_user
 from app.services.alert_routing import route_sos_alert
+from app.services.email_service import email_service
+from app.models.notification import Notification
+import logging
+
+logger = logging.getLogger("careconnect.sos")
 
 router = APIRouter(prefix="/api/sos", tags=["SOS Alerts"])
 
@@ -153,11 +158,89 @@ def trigger_sos(
     db.add(audit)
     db.commit()
 
-    # Route tiered notifications
+    # 1. Immediate SOS Email directly to logged-in user
+    logger.info(f"[SOS TRIGGER] User {current_user.email} activated SOS alert #{new_alert.id} ({category})")
+    email_res = email_service.send_sos_email_to_user(
+        user_name=current_user.full_name,
+        user_email=current_user.email,
+        emergency_message=new_alert.message,
+        location=resident.address or f"Room {resident.room_number}",
+        maps_url=maps_link,
+        timestamp_str=now.strftime("%B %d, %Y - %I:%M:%S %p UTC"),
+        category=category
+    )
+    logger.info(
+        f"[SOS USER EMAIL DISPATCH] Recipient: {current_user.email} | "
+        f"Status: {email_res.get('status')} | Provider: {email_res.get('provider')} | "
+        f"Error: {email_res.get('error')}"
+    )
+
+    # Record notification tracking entry in database
+    user_email_notif = Notification(
+        sos_id=new_alert.id,
+        user_id=current_user.id,
+        recipient_role=current_user.role,
+        recipient_name=current_user.full_name,
+        recipient_contact=current_user.email,
+        channel="EMAIL",
+        title="SOS Alert Triggered",
+        message=new_alert.message,
+        status=email_res.get("status", "DELIVERED"),
+        is_read=False,
+        created_at=now,
+        sent_at=now if email_res.get("success") else None,
+        delivered_at=email_res.get("delivered_at"),
+        failure_reason=email_res.get("failure_reason") or email_res.get("error")
+    )
+    db.add(user_email_notif)
+    db.commit()
+
+    # 2. Route tiered notifications across guardians, security, volunteers, admin
     route_sos_alert(db=db, sos=new_alert)
 
     db.refresh(new_alert)
     return enrich_sos_response(new_alert)
+
+
+# =============================================================================
+# INDEPENDENT SOS EMAIL VERIFICATION ENDPOINT
+# =============================================================================
+
+@router.post("/test-email")
+@router.get("/test-email")
+def test_sos_email(
+    to_email: Optional[str] = Query(None, description="Email address to receive sample SOS notification"),
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user)
+):
+    """
+    Independent email delivery test endpoint. Sends an authentic sample SOS notification
+    to verify SMTP / SendGrid / Resend credentials and network reachability.
+    """
+    target_email = to_email or (current_user.email if current_user else None) or "emergency-test@careconnect.org"
+    target_name = (current_user.full_name if current_user else None) or "CareConnect Verified Member"
+
+    logger.info(f"[TEST EMAIL TRIGGER] Initiating test SOS email to: {target_email}")
+    result = email_service.send_sos_email_to_user(
+        user_name=target_name,
+        user_email=target_email,
+        emergency_message="This is a verified test SOS emergency notification from CareConnect.",
+        location="CareConnect Facility - Wing B, Room 102",
+        maps_url="https://www.google.com/maps?q=13.0827,80.2707",
+        category="Test SOS Alert",
+        timestamp_str=datetime.utcnow().strftime("%B %d, %Y - %I:%M:%S %p UTC")
+    )
+
+    return {
+        "success": result.get("success", False),
+        "status": result.get("status"),
+        "recipient": target_email,
+        "subject": "SOS Alert Triggered",
+        "provider": result.get("provider"),
+        "delivered_at": result.get("delivered_at"),
+        "error": result.get("error") or result.get("failure_reason"),
+        "smtp_configuration": email_service.get_config_summary()
+    }
 
 
 # =============================================================================

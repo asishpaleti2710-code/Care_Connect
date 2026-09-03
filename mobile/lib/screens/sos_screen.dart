@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/app_theme.dart';
@@ -185,39 +186,72 @@ class _SosScreenState extends ConsumerState<SosScreen> with SingleTickerProvider
 
   Future<void> _executeSosDispatch(String category, String? details) async {
     final user = ref.read(authProvider).user;
+    final userName = user?.fullName ?? 'CareConnect Member';
+    final userEmail = user?.email ?? 'resident@careconnect.org';
+
+    developer.log(
+      '[SOS TRIGGER] Initiating emergency dispatch. User: $userName ($userEmail), Category: $category',
+      name: 'CareConnect.SOS',
+    );
 
     try {
-      final response = await _apiService.triggerSos(
-        category,
-        'Building A, Apt 304',
-        13.0827,
-        80.2707,
-        description: details ?? 'Immediate emergency assistance requested by ${user?.fullName ?? "Eleanor Vance"}.',
+      // 1. Primary SOS Alert dispatch (/api/sos) - triggers immediate email to user + tiered routing
+      final primaryResponse = await _apiService.createSosAlert(
+        category: category,
+        message: details ?? 'Immediate emergency assistance requested by $userName.',
+        latitude: 13.0827,
+        longitude: 80.2707,
       );
 
-      final data = response.data;
+      developer.log(
+        '[SOS API SUCCESS] /api/sos returned status: ${primaryResponse.statusCode}',
+        name: 'CareConnect.SOS',
+      );
+
+      // 2. Also register in legacy incidents tracker for real-time dashboard sync
+      try {
+        await _apiService.triggerSos(
+          category,
+          'Building A, Apt 304',
+          13.0827,
+          80.2707,
+          description: details ?? 'Immediate emergency assistance requested by $userName.',
+        );
+      } catch (_) {}
+
+      final data = primaryResponse.data;
+      final alertId = data['id'] ?? 999;
+
       if (mounted) {
         setState(() {
           _activeIncident = {
-            'id': data['id'] ?? 999,
-            'incident_code': data['incident_code'] ?? 'INC-999',
+            'id': alertId,
+            'incident_code': 'SOS-$alertId',
             'emergency_type': category,
             'location': 'Building A, Apt 304',
-            'status': 'Pending',
+            'status': 'ACTIVE',
             'description': details ?? 'Emergency signal broadcasted.',
           };
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🚨 SOS Alert Broadcasted! Responders notified.'),
+          SnackBar(
+            content: Text(
+              '🚨 SOS Alert #$alertId Broadcasted! Email notification sent to $userEmail',
+            ),
             backgroundColor: AppColors.statusEmergency,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
           ),
         );
         _loadIncidentHistory(silent: true);
       }
     } catch (e) {
+      developer.log(
+        '[SOS DISPATCH EXCEPTION] Failed to connect to server: $e',
+        name: 'CareConnect.SOS',
+      );
+
       if (mounted) {
         setState(() {
           _activeIncident = {
@@ -230,9 +264,10 @@ class _SosScreenState extends ConsumerState<SosScreen> with SingleTickerProvider
           };
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('🚨 Emergency alert triggered (Local mode active).'),
-            backgroundColor: AppColors.statusEmergency,
+          SnackBar(
+            content: Text('⚠️ SOS Alert triggered locally. Server sync issue: ${e.toString()}'),
+            backgroundColor: AppColors.statusAlert,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }

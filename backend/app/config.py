@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -34,6 +34,16 @@ class Settings:
     SECRET_KEY: str = os.getenv("SECRET_KEY", "careconnect_secret_key_production_secure_32bytes_minimum")
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))
+
+    # SMTP & Email Notification Settings
+    SMTP_HOST: Optional[str] = os.getenv("SMTP_HOST")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USERNAME: Optional[str] = os.getenv("SMTP_USERNAME") or os.getenv("SMTP_USER")
+    SMTP_PASSWORD: Optional[str] = os.getenv("SMTP_PASSWORD") or os.getenv("SMTP_PASS")
+    SENDER_EMAIL: Optional[str] = os.getenv("SENDER_EMAIL") or os.getenv("SMTP_FROM_EMAIL", "emergency-alerts@careconnect.org")
+    SMTP_FROM_NAME: str = os.getenv("SMTP_FROM_NAME", "CareConnect Emergency Network")
+    SENDGRID_API_KEY: Optional[str] = os.getenv("SENDGRID_API_KEY")
+    RESEND_API_KEY: Optional[str] = os.getenv("RESEND_API_KEY")
 
     @property
     def cors_origins(self) -> List[str]:
