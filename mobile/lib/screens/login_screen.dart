@@ -29,45 +29,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _loadCurrentServer() async {
-    var stored = await StorageService().getApiBaseUrl();
-    if (stored != null && (
-        stored.contains('localhost') ||
-        stored.contains('127.0.0.1') ||
-        stored.contains('10.0.2.2') ||
-        stored.contains('192.168.') ||
-        stored.contains('api.careconnect.app') ||
-        stored.trim().isEmpty
-    )) {
-      await StorageService().saveApiBaseUrl(ApiConfig.cloudProductionUrl);
-      stored = ApiConfig.cloudProductionUrl;
-    }
+    _currentBaseUrl = ApiConfig.cloudProductionUrl;
+    await StorageService().saveApiBaseUrl(_currentBaseUrl);
 
     if (mounted) {
-      setState(() {
-        _currentBaseUrl = (stored != null && stored.isNotEmpty) ? stored : ApiConfig.cloudProductionUrl;
-      });
+      setState(() {});
       _pingServer(_currentBaseUrl);
     }
   }
 
-  Future<void> _pingServer(String url) async {
+  Future<void> _pingServer([String? url]) async {
+    final target = url ?? ApiConfig.cloudProductionUrl;
     if (mounted) setState(() => _serverLatency = 'Connecting...');
-    final res = await ApiService().checkOnlineHealth(url);
+    final res = await ApiService().checkOnlineHealth(target);
     if (mounted) {
       setState(() {
         if (res['isOnline'] == true) {
           _serverLatency = '${res['latencyMs']}ms';
-          _currentBaseUrl = res['serverUrl'] ?? _currentBaseUrl;
         } else {
-          _serverLatency = 'Connecting...';
+          _serverLatency = 'Offline';
         }
       });
     }
   }
 
-  void _showServerSwitcherDialog(BuildContext context) {
-    final customUrlController = TextEditingController(text: _currentBaseUrl);
-
+  void _showServerStatusDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -75,140 +61,67 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.dns_rounded, color: Color(0xFF38BDF8), size: 22),
+            Icon(Icons.cloud_done_rounded, color: Color(0xFF10B981), size: 22),
             SizedBox(width: 8),
             Text(
-              'Backend Server Connection',
+              'CareConnect Cloud Status',
               style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Select server connection for your Moto G32 or development device:',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-              ),
-              const SizedBox(height: 12),
-              _serverOptionTile(
-                title: '☁️ Cloud Production (Railway)',
-                subtitle: 'Recommended for real phones (online 24/7)',
-                url: ApiConfig.cloudProductionUrl,
-                ctx: ctx,
-              ),
-              const SizedBox(height: 8),
-              _serverOptionTile(
-                title: '💻 Local PC Wi-Fi',
-                subtitle: 'Direct local server on same Wi-Fi',
-                url: ApiConfig.localLanUrl,
-                ctx: ctx,
-              ),
-              const SizedBox(height: 8),
-              _serverOptionTile(
-                title: '📱 Android Emulator',
-                subtitle: '10.0.2.2 loopback for emulator only',
-                url: ApiConfig.emulatorUrl,
-                ctx: ctx,
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Or Custom Server URL:',
-                style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 6),
-              TextField(
-                controller: customUrlController,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'https://...',
-                  hintStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
-                  filled: true,
-                  fillColor: const Color(0xFF0F172A),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Color(0xFF334155)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Color(0xFF94A3B8))),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final newUrl = customUrlController.text.trim();
-              if (newUrl.isNotEmpty) {
-                await StorageService().saveApiBaseUrl(newUrl);
-                if (mounted) setState(() => _currentBaseUrl = newUrl);
-                if (ctx.mounted) Navigator.pop(ctx);
-                _pingServer(newUrl);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488)),
-            child: const Text('Save & Connect', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _serverOptionTile({
-    required String title,
-    required String subtitle,
-    required String url,
-    required BuildContext ctx,
-  }) {
-    final isSelected = _currentBaseUrl == url;
-    return InkWell(
-      onTap: () async {
-        await StorageService().saveApiBaseUrl(url);
-        if (mounted) setState(() => _currentBaseUrl = url);
-        if (ctx.mounted) Navigator.pop(ctx);
-        _pingServer(url);
-      },
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0D9488).withValues(alpha: 0.2) : const Color(0xFF0F172A),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF0D9488) : const Color(0xFF334155),
-          ),
-        ),
-        child: Row(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(
-              isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: isSelected ? const Color(0xFF0D9488) : const Color(0xFF64748B),
-              size: 18,
+            const Text(
+              'Your app connects 24/7 to the CareConnect Cloud production network.',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
             ),
-            const SizedBox(width: 8),
-            Expanded(
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  const Text('Production API Gateway:', style: TextStyle(color: Color(0xFF64748B), fontSize: 11)),
+                  const SizedBox(height: 4),
+                  const Text(
+                    ApiConfig.cloudProductionUrl,
+                    style: TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontWeight: FontWeight.bold),
                   ),
+                  const SizedBox(height: 8),
                   Text(
-                    subtitle,
-                    style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                    'Status: ${_serverLatency == 'Offline' ? 'Reconnecting...' : 'Online (${_serverLatency ?? 'checking...'})'}',
+                    style: TextStyle(
+                      color: _serverLatency == 'Offline' ? const Color(0xFFEF4444) : const Color(0xFF10B981),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _pingServer();
+            },
+            child: const Text('Refresh Status', style: TextStyle(color: Color(0xFF0D9488))),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D9488)),
+            child: const Text('Close', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
@@ -320,7 +233,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       // Interactive Server Connection Chip & Switcher
                       InkWell(
-                        onTap: () => _showServerSwitcherDialog(context),
+                        onTap: () => _showServerStatusDialog(context),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -328,9 +241,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             color: const Color(0xFF0F172A),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: _serverLatency == 'Offline'
-                                  ? const Color(0xFFEF4444)
-                                  : const Color(0xFF334155),
+                              color: (_serverLatency == null || _serverLatency == 'Connecting...')
+                                  ? const Color(0xFFF59E0B)
+                                  : (_serverLatency == 'Offline'
+                                      ? const Color(0xFFEF4444)
+                                      : const Color(0xFF10B981)),
                             ),
                           ),
                           child: Row(
@@ -339,18 +254,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 width: 8,
                                 height: 8,
                                 decoration: BoxDecoration(
-                                  color: _serverLatency == 'Offline'
-                                      ? const Color(0xFFEF4444)
-                                      : const Color(0xFF10B981),
+                                  color: (_serverLatency == null || _serverLatency == 'Connecting...')
+                                      ? const Color(0xFFF59E0B)
+                                      : (_serverLatency == 'Offline'
+                                          ? const Color(0xFFEF4444)
+                                          : const Color(0xFF10B981)),
                                   shape: BoxShape.circle,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  _currentBaseUrl.contains('railway')
-                                      ? 'Server: Cloud Production (${_serverLatency ?? 'checking...'})'
-                                      : 'Server: $_currentBaseUrl (${_serverLatency ?? 'checking...'})',
+                                  'Cloud: ${_serverLatency == 'Offline' ? 'Reconnecting...' : (_serverLatency ?? 'Checking...')}',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Color(0xFF94A3B8),
@@ -360,7 +275,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               const Icon(
-                                Icons.settings_ethernet_rounded,
+                                Icons.cloud_done_rounded,
                                 size: 14,
                                 color: Color(0xFF38BDF8),
                               ),

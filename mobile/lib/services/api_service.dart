@@ -22,29 +22,21 @@ class ApiService {
         onRequest: (options, handler) async {
           String? customUrl = await _storageService.getApiBaseUrl();
 
-          // Auto-clean any local, emulator, or invalid URLs so physical devices never get trapped
-          final isLocalOrInvalid = customUrl != null && (
-            customUrl.contains('localhost') ||
-            customUrl.contains('127.0.0.1') ||
-            customUrl.contains('10.0.2.2') ||
-            customUrl.contains('192.168.') ||
-            customUrl.contains('api.careconnect.app') ||
-            customUrl.trim().isEmpty
-          );
-
-          if (isLocalOrInvalid) {
-            developer.log(
-              '[NETWORK SANITIZER] Detected local/unreachable URL ($customUrl). Resetting to Cloud Production URL.',
-              name: 'CareConnect.Network',
-            );
-            await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
-            customUrl = ApiConfig.cloudProductionUrl;
-          }
-
-          if (customUrl != null && customUrl.trim().isNotEmpty) {
-            options.baseUrl = customUrl.trim();
+          // Reject any local / loopback / LAN / placeholder URLs and force production cloud URL
+          if (customUrl != null &&
+              customUrl.trim().isNotEmpty &&
+              !customUrl.contains('localhost') &&
+              !customUrl.contains('127.0.0.1') &&
+              !customUrl.contains('10.') &&
+              !customUrl.contains('192.168.') &&
+              !customUrl.contains('172.') &&
+              !customUrl.contains('api.careconnect.app')) {
+            options.baseUrl = customUrl.trim().replaceAll(RegExp(r'/+$'), '');
           } else {
             options.baseUrl = ApiConfig.cloudProductionUrl;
+            if (customUrl != ApiConfig.cloudProductionUrl) {
+              await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
+            }
           }
 
           final token = await _storageService.getToken();
@@ -68,24 +60,32 @@ class ApiService {
         onError: (DioException error, handler) async {
           developer.log('[API ERR] ${error.type} on ${error.requestOptions.baseUrl}${error.requestOptions.path}: ${error.message}', name: 'CareConnect.Network');
           
-          // Automatic Failover: If local/custom URL failed with connection error, retry using Production Cloud URL
           final isNetworkError = error.type == DioExceptionType.connectionTimeout ||
               error.type == DioExceptionType.connectionError ||
               error.type == DioExceptionType.sendTimeout ||
               error.type == DioExceptionType.receiveTimeout;
 
-          if (isNetworkError && error.requestOptions.baseUrl != ApiConfig.cloudProductionUrl) {
-            developer.log('[API AUTO-FAILOVER] Retrying request against Production Cloud URL: ${ApiConfig.cloudProductionUrl}', name: 'CareConnect.Network');
-            try {
-              final fallbackOptions = error.requestOptions.copyWith(
-                baseUrl: ApiConfig.cloudProductionUrl,
-              );
-              final fallbackResponse = await _dio.fetch(fallbackOptions);
-              await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
-              developer.log('[API AUTO-FAILOVER SUCCESS] Succeeded on cloud backend!', name: 'CareConnect.Network');
-              return handler.resolve(fallbackResponse);
-            } catch (fallbackError) {
-              developer.log('[API AUTO-FAILOVER FAILED] Fallback also failed: $fallbackError', name: 'CareConnect.Network');
+          if (isNetworkError) {
+            final failedUrl = error.requestOptions.baseUrl;
+            final failoverCandidates = ApiConfig.serverCandidates
+                .where((candidate) => candidate != failedUrl)
+                .toList();
+
+            for (final candidate in failoverCandidates) {
+              try {
+                developer.log('[API AUTO-FAILOVER] Probing fallback candidate: $candidate', name: 'CareConnect.Network');
+                final fallbackOptions = error.requestOptions.copyWith(
+                  baseUrl: candidate,
+                  connectTimeout: const Duration(seconds: 4),
+                  receiveTimeout: const Duration(seconds: 4),
+                );
+                final fallbackResponse = await _dio.fetch(fallbackOptions);
+                await _storageService.saveApiBaseUrl(candidate);
+                developer.log('[API AUTO-FAILOVER SUCCESS] Successfully connected to fallback server: $candidate', name: 'CareConnect.Network');
+                return handler.resolve(fallbackResponse);
+              } catch (fallbackErr) {
+                developer.log('[API AUTO-FAILOVER] Fallback $candidate failed: $fallbackErr', name: 'CareConnect.Network');
+              }
             }
           }
           return handler.next(error);
@@ -96,69 +96,67 @@ class ApiService {
 
   Dio get client => _dio;
 
-  /// Check online server connectivity and latency with cold-start resilience
+  /// Check online server connectivity and latency with multi-endpoint failover
   Future<Map<String, dynamic>> checkOnlineHealth([String? testUrl]) async {
     var targetUrl = testUrl ?? (await _storageService.getApiBaseUrl()) ?? ApiConfig.cloudProductionUrl;
-
-    // Discard any local/unreachable URLs
-    if (targetUrl.contains('localhost') ||
-        targetUrl.contains('127.0.0.1') ||
-        targetUrl.contains('10.0.2.2') ||
-        targetUrl.contains('192.168.') ||
-        targetUrl.contains('api.careconnect.app') ||
-        targetUrl.trim().isEmpty) {
-      targetUrl = ApiConfig.cloudProductionUrl;
-      await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
-    }
+    targetUrl = targetUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    if (targetUrl.isEmpty) targetUrl = ApiConfig.cloudProductionUrl;
 
     final stopwatch = Stopwatch()..start();
     try {
       final tempDio = Dio(
         BaseOptions(
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
+          connectTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
         ),
       );
-      final clean = targetUrl.replaceAll(RegExp(r'/+$'), '');
-      final response = await tempDio.get('$clean/health');
+      final response = await tempDio.get('$targetUrl/health');
       stopwatch.stop();
-      return {
-        'isOnline': response.statusCode == 200,
-        'latencyMs': stopwatch.elapsedMilliseconds,
-        'serverUrl': targetUrl,
-        'status': response.data?['status'] ?? 'online',
-      };
-    } catch (e) {
-      stopwatch.stop();
-      // If a non-cloud URL failed, try pinging production cloud as backup
-      if (targetUrl != ApiConfig.cloudProductionUrl) {
-        try {
-          final fallbackDio = Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 8),
-              receiveTimeout: const Duration(seconds: 8),
-            ),
-          );
-          final fbRes = await fallbackDio.get('${ApiConfig.cloudProductionUrl}/health');
-          if (fbRes.statusCode == 200) {
-            await _storageService.saveApiBaseUrl(ApiConfig.cloudProductionUrl);
-            return {
-              'isOnline': true,
-              'latencyMs': stopwatch.elapsedMilliseconds,
-              'serverUrl': ApiConfig.cloudProductionUrl,
-              'status': 'online',
-            };
-          }
-        } catch (_) {}
+      if (response.statusCode == 200) {
+        return {
+          'isOnline': true,
+          'latencyMs': stopwatch.elapsedMilliseconds,
+          'serverUrl': targetUrl,
+          'status': response.data?['status'] ?? 'online',
+        };
       }
+    } catch (_) {}
 
-      return {
-        'isOnline': false,
-        'latencyMs': stopwatch.elapsedMilliseconds,
-        'serverUrl': targetUrl,
-        'error': e.toString(),
-      };
+    // Probe alternate candidate servers if primary target is unreachable
+    final probeCandidates = ApiConfig.serverCandidates
+        .where((candidate) => candidate != targetUrl)
+        .toList();
+
+    for (final candidate in probeCandidates) {
+      try {
+        final probeDio = Dio(
+          BaseOptions(
+            connectTimeout: const Duration(seconds: 3),
+            receiveTimeout: const Duration(seconds: 3),
+          ),
+        );
+        final fbRes = await probeDio.get('$candidate/health');
+        if (fbRes.statusCode == 200) {
+          stopwatch.stop();
+          await _storageService.saveApiBaseUrl(candidate);
+          developer.log('[HEALTH FAILOVER] Discovered healthy server: $candidate (${stopwatch.elapsedMilliseconds}ms)', name: 'CareConnect.Network');
+          return {
+            'isOnline': true,
+            'latencyMs': stopwatch.elapsedMilliseconds,
+            'serverUrl': candidate,
+            'status': fbRes.data?['status'] ?? 'online',
+          };
+        }
+      } catch (_) {}
     }
+
+    stopwatch.stop();
+    return {
+      'isOnline': false,
+      'latencyMs': stopwatch.elapsedMilliseconds,
+      'serverUrl': targetUrl,
+      'error': 'Connection timed out',
+    };
   }
 
   // =========================================================================

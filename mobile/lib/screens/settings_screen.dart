@@ -106,13 +106,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               children: [
                 ActionChip(
                   backgroundColor: AppColors.accentTeal.withValues(alpha: 0.2),
-                  label: const Text('☁️ Railway Cloud (Online)', style: TextStyle(fontSize: 10, color: AppColors.accentTeal, fontWeight: FontWeight.bold)),
+                  label: const Text('☁️ Railway Cloud (Online 24/7)', style: TextStyle(fontSize: 10, color: AppColors.accentTeal, fontWeight: FontWeight.bold)),
                   onPressed: () => controller.text = ApiConfig.cloudProductionUrl,
-                ),
-                ActionChip(
-                  backgroundColor: AppColors.bgDarkInput,
-                  label: const Text('💻 Local Wi-Fi (PC)', style: TextStyle(fontSize: 10, color: AppColors.textPrimary)),
-                  onPressed: () => controller.text = ApiConfig.localLanUrl,
                 ),
               ],
             ),

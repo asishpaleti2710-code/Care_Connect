@@ -32,5 +32,6 @@ dist-ssr/
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
-*.swp
+# Testing artifacts
+mobile_*.png
+test_phone_e2e.py
